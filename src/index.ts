@@ -1,8 +1,11 @@
-// fast-classifier core: shared types + config. Classify/provider/pipeline
-// modules are re-exported here as they land (see subpath exports for direct
-// imports: fast-classifier/config, /jmap, /mcp-client, /pipelines, /testing).
+// fast-classifier core barrel. Transports live behind subpath exports
+// (fast-classifier/jmap, /mcp-client, /testing) so consumers only pull what
+// they use; pipelines are re-exported here and at /pipelines.
 export * from './types.js'
 export * from './config/index.js'
+export * from './classify/index.js'
+export * from './safety/index.js'
+export * from './audit/index.js'
 export {
   MUTATING_METHODS,
   NeverDeleteViolation,
@@ -13,3 +16,5 @@ export {
   type PageRequest,
   type ProviderCapabilities,
 } from './provider/types.js'
+export { paginate, Pager, type PagerOptions } from './provider/paging.js'
+export { batchExecute, type BatchOptions } from './provider/batching.js'

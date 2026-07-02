@@ -68,10 +68,15 @@ async function readConfigFile(absPath: string): Promise<unknown> {
     }
     return mod.default
   } catch (err) {
-    if (absPath.endsWith('.ts') && err instanceof Error && /Unknown file extension|ERR_UNSUPPORTED/.test(err.message)) {
+    if (
+      absPath.endsWith('.ts') &&
+      err instanceof Error &&
+      /Unknown file extension|ERR_UNSUPPORTED/.test(err.message)
+    ) {
       throw new Error(
         `cannot load TypeScript config on this runtime — use bun, Node >= 22.6 ` +
           `(type stripping), or a .mjs/.json config instead: ${absPath}`,
+        { cause: err },
       )
     }
     throw err

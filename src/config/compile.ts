@@ -59,9 +59,7 @@ export function compileConfig(config: ClassifierConfig): CompiledRules {
         nameRules.push({
           pattern: new RegExp(rule.pattern, 'i'),
           category: rule.category,
-          onlyForDomains: rule.onlyForDomains
-            ? new Set(rule.onlyForDomains.map(lower))
-            : null,
+          onlyForDomains: rule.onlyForDomains ? new Set(rule.onlyForDomains.map(lower)) : null,
         })
         break
     }

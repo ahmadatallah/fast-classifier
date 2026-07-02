@@ -1,0 +1,140 @@
+import type { EmailMeta, Label, SearchPage, SearchQuery, SenderInfo } from '../../types.js'
+import { labelMatches } from '../../types.js'
+import type { MailProvider, PageRequest, ProviderCapabilities } from '../types.js'
+import { TransportError } from '../types.js'
+import { McpHttpClient } from './http-client.js'
+import type { McpHttpClientOptions } from './http-client.js'
+import { buildSearchString } from './query.js'
+
+interface RawSender {
+  name?: string
+  email?: string
+}
+
+interface RawEmail {
+  id: string
+  threadId?: string
+  subject?: string
+  from?: RawSender[]
+  receivedAt?: string
+  isRead?: boolean
+  isAnswered?: boolean
+  labels?: string[]
+  mailboxes?: string[]
+  preview?: string
+}
+
+interface RawLabel {
+  id?: string
+  name?: string
+  path?: string
+  parentId?: string | null
+  role?: string | null
+  totalEmails?: number
+}
+
+/** The server answers EITHER with a bare array OR { items: [...] } — the session hit both. */
+function toArray<T>(r: unknown): T[] {
+  if (Array.isArray(r)) return r as T[]
+  const items = (r as { items?: unknown } | null | undefined)?.items
+  if (Array.isArray(items)) return items as T[]
+  return []
+}
+
+function toEmailMeta(raw: RawEmail): EmailMeta {
+  const sender = raw.from?.[0]
+  const from: SenderInfo = {
+    name: sender?.name ?? '',
+    email: (sender?.email ?? '').toLowerCase(),
+  }
+  return {
+    id: raw.id,
+    threadId: raw.threadId,
+    subject: raw.subject ?? '',
+    from,
+    receivedAt: raw.receivedAt ?? '',
+    isUnread: !raw.isRead,
+    isAnswered: raw.isAnswered,
+    labels: raw.labels ?? raw.mailboxes ?? [],
+    snippet: raw.preview,
+  }
+}
+
+function toLabel(raw: RawLabel): Label {
+  return {
+    id: raw.id ?? '',
+    name: raw.name ?? '',
+    path: raw.path,
+    parentId: raw.parentId,
+    role: raw.role,
+    totalEmails: raw.totalEmails,
+  }
+}
+
+export class McpMailProvider implements MailProvider {
+  readonly kind = 'mcp' as const
+  readonly caps: ProviderCapabilities = {
+    // Hard server cap on search_email
+    maxPageSize: 50,
+    serverSideNotFrom: 'address-only',
+    autoCreatesLabels: true,
+    canSetLabelColor: false,
+  }
+
+  private readonly client: McpHttpClient
+
+  constructor(opts: McpHttpClientOptions) {
+    this.client = new McpHttpClient(opts)
+  }
+
+  async connect(): Promise<void> {
+    await this.client.init()
+  }
+
+  async searchEmails(query: SearchQuery, page: PageRequest): Promise<SearchPage> {
+    const r = await this.client.callTool('search_email', {
+      query: buildSearchString(query),
+      limit: Math.min(page.limit, this.caps.maxPageSize),
+      position: page.position,
+    })
+    return { items: toArray<RawEmail>(r).map(toEmailMeta), position: page.position }
+  }
+
+  async getEmail(id: string): Promise<EmailMeta> {
+    const r = await this.client.callTool('read_email', { ids: [id] })
+    const first = toArray<RawEmail>(r)[0]
+    if (!first) throw new TransportError(`email not found: ${id}`)
+    return toEmailMeta(first)
+  }
+
+  async listLabels(): Promise<Label[]> {
+    const r = await this.client.callTool('list_labels', {})
+    return toArray<RawLabel>(r).map(toLabel)
+  }
+
+  /**
+   * Fastmail's MCP has NO create-label tool, but update_email addLabels
+   * AUTO-CREATES missing labels (session-proven — hence caps.autoCreatesLabels).
+   * Missing names therefore get a placeholder Label { id: '', name } instead of
+   * a throw; the real label materializes on the first addLabels call.
+   */
+  async ensureLabels(names: string[]): Promise<Map<string, Label>> {
+    const labels = await this.listLabels()
+    const out = new Map<string, Label>()
+    for (const name of names) {
+      const found = labels.find((l) => labelMatches(l, name))
+      out.set(name, found ?? { id: '', name })
+    }
+    return out
+  }
+
+  async addLabels(emailIds: string[], labelNames: string[]): Promise<void> {
+    await this.client.callTool('update_email', { ids: emailIds, addLabels: labelNames })
+  }
+
+  async archive(emailIds: string[]): Promise<void> {
+    // The sanctioned "remove from Inbox, keep labels". NEVER use
+    // update_email removeLabels: ['Inbox'] — the server rejects it.
+    await this.client.callTool('archive_email', { ids: emailIds })
+  }
+}

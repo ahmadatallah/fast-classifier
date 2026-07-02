@@ -24,7 +24,12 @@ export {
   type OpsConfig,
   type Rule,
 } from './schema.js'
-export { compileConfig, type CompiledNeedsAction, type CompiledRules, type NameRule } from './compile.js'
+export {
+  compileConfig,
+  type CompiledNeedsAction,
+  type CompiledRules,
+  type NameRule,
+} from './compile.js'
 export { defineConfig } from './define-config.js'
 export {
   assertNoSecrets,

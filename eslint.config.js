@@ -11,6 +11,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+  },
+  {
     // core/library code must never depend on the CLI or MCP-server shells
     files: ['src/**'],
     ignores: ['src/cli/**', 'src/mcp-server/**'],
