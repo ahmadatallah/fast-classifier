@@ -1,0 +1,83 @@
+{
+  "name": "fast-classifier",
+  "version": "0.1.0",
+  "description": "Deterministic, rule-first email classifier for Fastmail: sweep newsletters, file everything into labels, flag what needs action — dry-run first, never deletes.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ahmad Atallah",
+  "repository": "github:ahmadatallah/fast-classifier",
+  "keywords": [
+    "fastmail",
+    "jmap",
+    "email",
+    "classifier",
+    "inbox",
+    "newsletter",
+    "mcp",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "fast-classifier": "dist/cli/main.js",
+    "fast-classifier-mcp": "dist/mcp-server/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "default": "./dist/config/index.js"
+    },
+    "./jmap": {
+      "types": "./dist/provider/jmap/index.d.ts",
+      "default": "./dist/provider/jmap/index.js"
+    },
+    "./mcp-client": {
+      "types": "./dist/provider/mcp/index.d.ts",
+      "default": "./dist/provider/mcp/index.js"
+    },
+    "./pipelines": {
+      "types": "./dist/pipeline/index.d.ts",
+      "default": "./dist/pipeline/index.js"
+    },
+    "./testing": {
+      "types": "./dist/provider/memory.d.ts",
+      "default": "./dist/provider/memory.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "coverage": "bun test --coverage",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "hygiene": "bun scripts/check-hygiene.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^15.0.0",
+    "tldts": "^7.4.6",
+    "zod": "^3.25"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.4",
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^26.1.0",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
+    "publint": "^0.3.21",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1"
+  }
+}
