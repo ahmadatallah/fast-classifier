@@ -6,6 +6,7 @@ export * from './config/index.js'
 export * from './classify/index.js'
 export * from './safety/index.js'
 export * from './audit/index.js'
+export * from './pipeline/index.js'
 export {
   MUTATING_METHODS,
   NeverDeleteViolation,
