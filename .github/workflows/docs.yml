@@ -25,6 +25,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bunx --bun astro build
         working-directory: docs
+        env:
+          DOCS_BASE: /fast-classifier
 
 # DEPLOYMENT (parked): GitHub Pages needs a public repo (or a paid plan).
 # When ready — `gh api -X POST repos/ahmadatallah/fast-classifier/pages -f build_type=workflow`,

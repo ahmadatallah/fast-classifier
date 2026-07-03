@@ -5,7 +5,11 @@ import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc'
 
 export default defineConfig({
   site: 'https://ahmadatallah.github.io',
-  base: '/fast-classifier',
+  // GitHub Pages project sites live under /fast-classifier — but locally that
+  // base makes every URL awkward (/fast-classifier/quickstart/). CI sets
+  // DOCS_BASE; local dev/preview serves at the root. Content links are all
+  // page-relative, so they resolve correctly under either base.
+  ...(process.env.DOCS_BASE ? { base: process.env.DOCS_BASE } : {}),
   integrations: [
     starlight({
       title: 'fast-classifier',
