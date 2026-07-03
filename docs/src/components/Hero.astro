@@ -1,0 +1,168 @@
+---
+/**
+ * Starlight `Hero` override — "Audit Ledger" hero.
+ *
+ * Left-aligned mono wordmark with a blinking block cursor, tagline in the
+ * body face, and square action buttons. Reads the same frontmatter `hero`
+ * fields (title, tagline, actions) as the stock component; `hero.image` and
+ * action icons are intentionally not rendered.
+ */
+import Mark from './Mark.astro';
+import FastmailWordmark from './FastmailWordmark.astro';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
+---
+
+<div class="ledger-hero">
+  {/* `_top` is Starlight's PAGE_TITLE_ID — skip links target it */}
+  <h1 id="_top" data-page-title>
+    <span class="mark"><Mark size={52} /></span>
+    <span class="wordmark" set:html={title} /><span class="cursor" aria-hidden="true">▍</span>
+  </h1>
+  {tagline && <p class="tagline" set:html={tagline} />}
+  {
+    actions.length > 0 && (
+      <div class="actions">
+        {actions.map(
+          ({ attrs: { class: className, ...attrs } = {}, link: href, text, variant }) => (
+            <a
+              {href}
+              class:list={['action', variant === 'primary' ? 'filled' : 'outline', className]}
+              {...attrs}
+            >
+              {text}
+            </a>
+          )
+        )}
+      </div>
+    )
+  }
+  <p class="built-for">
+    <span class="built-for-label">Built for</span>
+    <a href="https://www.fastmail.com" rel="noopener" class="fastmail-link">
+      <FastmailWordmark />
+    </a>
+    <span class="built-for-note">— independent open-source project, not affiliated with Fastmail</span>
+  </p>
+</div>
+
+<style>
+  .ledger-hero {
+    padding-block: clamp(2.5rem, 8vmin, 5.5rem) 1rem;
+  }
+
+  h1 {
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: clamp(2.25rem, 1rem + 5vw, 3.75rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--sl-color-white);
+    overflow-wrap: anywhere;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35em;
+  }
+
+  .mark {
+    display: inline-flex;
+    color: var(--sl-color-white);
+  }
+
+  .cursor {
+    color: var(--sl-color-text-accent);
+    margin-inline-start: 0.08em;
+    animation: ledger-blink 1.1s step-end infinite;
+  }
+
+  @keyframes ledger-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor {
+      animation: none;
+    }
+  }
+
+  .tagline {
+    margin-top: 1.25rem;
+    max-width: 58ch;
+    font-size: var(--sl-text-lg);
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    margin-top: 2rem;
+  }
+
+  .action {
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+    padding: 0.7rem 1.4rem;
+    border: 1px solid transparent;
+  }
+
+  .action.filled {
+    background-color: var(--sl-color-text-accent);
+    border-color: var(--sl-color-text-accent);
+    color: var(--sl-color-bg);
+  }
+
+  .action.filled:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .action.outline {
+    border-color: var(--sl-color-hairline);
+    color: var(--sl-color-text);
+    background-color: transparent;
+  }
+
+  .action.outline:hover {
+    border-color: var(--sl-color-text-accent);
+    color: var(--sl-color-text-accent);
+  }
+
+  .built-for {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 2.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--sl-color-hairline);
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: var(--sl-text-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+
+  .fastmail-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--sl-color-text);
+  }
+
+  .fastmail-link :global(svg) {
+    display: block;
+  }
+
+  .built-for-note {
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--sl-color-gray-3);
+  }
+</style>

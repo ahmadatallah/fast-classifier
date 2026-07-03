@@ -1,0 +1,89 @@
+---
+/**
+ * Decorative terminal window showing the canonical loop as a fake session.
+ * Pure CSS dots in the header bar; content is flush-left inside <pre> so the
+ * rendered whitespace is exactly what the source shows.
+ */
+---
+
+<figure class="ledger-terminal not-content">
+  <figcaption class="bar">
+    <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="bar-label">fast-classifier — the canonical loop</span>
+  </figcaption>
+  <pre tabindex="0"><code><span class="ps">$</span> fast-classifier analyze
+<span class="out">recon: 6,551 emails · 214 senders · report written</span>
+<span class="ps">$</span> fast-classifier plan
+<span class="dim"># DRY RUN — no changes will be made</span>
+<span class="out">plan: sweep 3,849 newsletters · file 5,573 into 14 labels</span>
+<span class="ps">$</span> fast-classifier sweep --execute
+<span class="ok">OK  swept 3,849 newsletters — 0 deleted (never deletes)</span>
+<span class="ps">$</span> fast-classifier file --execute
+<span class="ps">$</span> fast-classifier needs-action
+<span class="ps">$</span> fast-classifier verify</code></pre>
+</figure>
+
+<style>
+  .ledger-terminal {
+    margin: 2.5rem 0 0;
+    border: 1px solid var(--sl-color-hairline);
+    background-color: var(--sl-color-bg);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.45rem 0.9rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+    background-color: var(--sl-color-gray-6);
+  }
+
+  .dots {
+    display: inline-flex;
+    gap: 5px;
+  }
+
+  .dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px; /* class beats the global square-corners reset */
+    background-color: var(--sl-color-gray-4);
+  }
+
+  .bar-label {
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: var(--sl-text-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--sl-color-gray-3);
+  }
+
+  pre {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: var(--sl-text-code);
+    line-height: 1.75;
+    color: var(--sl-color-text);
+  }
+
+  .ps {
+    color: var(--sl-color-gray-3);
+  }
+
+  .out {
+    color: var(--sl-color-gray-2);
+  }
+
+  .dim {
+    color: var(--sl-color-gray-3);
+    font-style: italic;
+  }
+
+  .ok {
+    color: var(--sl-color-text-accent);
+    font-weight: 600;
+  }
+</style>

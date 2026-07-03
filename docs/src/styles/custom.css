@@ -1,0 +1,413 @@
+/**
+ * "The Audit Ledger" — editorial-terminal reskin.
+ *
+ * Everything here is deliberately UNLAYERED: Starlight ships all of its own
+ * styles inside `starlight.*` cascade layers (including Pagefind's UI, which
+ * it imports with `layer(starlight.core)`), and unlayered author CSS beats
+ * layered CSS regardless of specificity. Tokens first, targeted selectors
+ * only where tokens don't reach.
+ */
+
+/* ---------------------------------------------------------------- */
+/* 1. Type + layout tokens                                           */
+/* ---------------------------------------------------------------- */
+
+:root {
+  /* Starlight appends its system fallback stacks to these automatically. */
+  --sl-font: 'Inter Variable';
+  --sl-font-mono: 'JetBrains Mono Variable';
+
+  --sl-line-height: 1.7;
+  --sl-content-width: 42rem;
+
+  /* Restrained heading scale — mono headings read larger than sans, and the
+     hairline rules do the separating work instead of sheer size. Unlayered,
+     so this also beats Starlight's desktop media-query bump. */
+  --sl-text-h1: var(--sl-text-4xl);
+  --sl-text-h2: var(--sl-text-2xl);
+  --sl-text-h3: var(--sl-text-xl);
+  --sl-text-h4: var(--sl-text-lg);
+  --sl-text-h5: var(--sl-text-base);
+
+  /* A ledger is flat: no depth anywhere. */
+  --sl-shadow-sm: none;
+  --sl-shadow-md: none;
+  --sl-shadow-lg: none;
+}
+
+/* Landing page (`data-has-hero` is set on <html>) has no sidebars — give the
+   ledger strip and terminal a wider canvas. */
+[data-has-hero] {
+  --sl-content-width: 56rem;
+}
+
+/* ---------------------------------------------------------------- */
+/* 2. Palette — dark mode is Starlight's `:root` default             */
+/* ---------------------------------------------------------------- */
+
+:root {
+  /* Warm near-black ledger */
+  --sl-color-white: #f2efe8;
+  --sl-color-gray-1: #edeae3;
+  --sl-color-gray-2: #d9d5cc;
+  --sl-color-gray-3: #98938a;
+  --sl-color-gray-4: #6b675f;
+  --sl-color-gray-5: #2a2723; /* hairline */
+  --sl-color-gray-6: #1b1917; /* surface */
+  --sl-color-black: #121110; /* page bg */
+
+  /* Accent 1 — teal, brightened for dark-mode contrast
+     (#2dd4bf on #121110 ≈ 10:1) */
+  --sl-color-accent-low: #12332f;
+  --sl-color-accent: #14b8a6;
+  --sl-color-accent-high: #2dd4bf;
+
+  --sl-color-text: #edeae3;
+  --sl-color-text-accent: var(--sl-color-accent-high);
+  --sl-color-text-invert: var(--sl-color-black);
+  --sl-color-bg: var(--sl-color-black);
+  --sl-color-bg-nav: var(--sl-color-black);
+  --sl-color-bg-sidebar: var(--sl-color-black);
+  --sl-color-bg-inline-code: var(--sl-color-gray-6);
+  --sl-color-bg-accent: var(--sl-color-accent-high);
+
+  /* One hairline everywhere — including `hairline-shade`, which Starlight
+     uses for the header's bottom border and the ToC's left rule. */
+  --sl-color-hairline-light: var(--sl-color-gray-5);
+  --sl-color-hairline: var(--sl-color-gray-5);
+  --sl-color-hairline-shade: var(--sl-color-gray-5);
+
+  --sl-color-backdrop-overlay: rgba(18, 17, 16, 0.72);
+
+  /* Two accents only: fold Starlight's blue/purple/green hues (notes, tips,
+     badges) into the teal family so nothing else in the UI invents a color. */
+  --sl-color-blue-low: #12332f;
+  --sl-color-blue: #14b8a6;
+  --sl-color-blue-high: #6ee2d2;
+  --sl-color-purple-low: #12332f;
+  --sl-color-purple: #14b8a6;
+  --sl-color-purple-high: #6ee2d2;
+  --sl-color-green-low: #12332f;
+  --sl-color-green: #14b8a6;
+  --sl-color-green-high: #6ee2d2;
+
+  /* Accent 2 — amber, reserved for cautions and tiny highlights */
+  --sl-color-orange-low: #33250f;
+  --sl-color-orange: #f59e0b;
+  --sl-color-orange-high: #fbcf7f;
+
+  /* Danger stays red, tuned warm */
+  --sl-color-red-low: #391713;
+  --sl-color-red: #ef6a5a;
+  --sl-color-red-high: #f6b3aa;
+}
+
+:root[data-theme='light'] {
+  /* Warm paper ledger */
+  --sl-color-white: #1c1b1a; /* ink — strongest text */
+  --sl-color-gray-1: #2a2723;
+  --sl-color-gray-2: #3d3a34;
+  --sl-color-gray-3: #6b675f; /* muted */
+  --sl-color-gray-4: #948f85;
+  --sl-color-gray-5: #e3e0d8; /* hairline */
+  --sl-color-gray-6: #f2f0ea; /* surface */
+  --sl-color-gray-7: #f6f4ef;
+  --sl-color-black: #faf9f6; /* page bg */
+
+  /* Deep teal (#0f766e on #faf9f6 ≈ 5.2:1) */
+  --sl-color-accent-low: #d9eae6;
+  --sl-color-accent: #0f766e;
+  --sl-color-accent-high: #0b5a54;
+
+  --sl-color-text: #1c1b1a;
+  --sl-color-text-accent: var(--sl-color-accent);
+  --sl-color-text-invert: var(--sl-color-black);
+  --sl-color-bg-nav: var(--sl-color-black);
+  --sl-color-bg-sidebar: var(--sl-color-black);
+  --sl-color-bg-inline-code: var(--sl-color-gray-6);
+  --sl-color-bg-accent: var(--sl-color-accent);
+
+  --sl-color-hairline-light: var(--sl-color-gray-5);
+  --sl-color-hairline: var(--sl-color-gray-5);
+  --sl-color-hairline-shade: var(--sl-color-gray-5);
+
+  --sl-color-backdrop-overlay: rgba(107, 103, 95, 0.5);
+
+  --sl-color-blue-low: #e2eeea;
+  --sl-color-blue: #0f766e;
+  --sl-color-blue-high: #0b5a54;
+  --sl-color-purple-low: #e2eeea;
+  --sl-color-purple: #0f766e;
+  --sl-color-purple-high: #0b5a54;
+  --sl-color-green-low: #e2eeea;
+  --sl-color-green: #0f766e;
+  --sl-color-green-high: #0b5a54;
+
+  --sl-color-orange-low: #f7ebd9;
+  --sl-color-orange: #b45309;
+  --sl-color-orange-high: #7c3a06;
+
+  --sl-color-red-low: #f8e4e0;
+  --sl-color-red: #b42318;
+  --sl-color-red-high: #8a1b12;
+}
+
+/* ---------------------------------------------------------------- */
+/* 3. Texture: square corners, hairline rules                        */
+/* ---------------------------------------------------------------- */
+
+/* Zero specificity, but unlayered — strips every rounded corner Starlight
+   (and Pagefind) draws. Own components opt back in with class selectors. */
+*,
+*::before,
+*::after {
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* 4. Prose                                                          */
+/* ---------------------------------------------------------------- */
+
+.sl-markdown-content
+  :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)),
+h1#_top {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Hairline underlines + generous top whitespace: the section rule is the
+   page's organizing device. */
+.sl-markdown-content :is(h2, h3):not(:where(.not-content *)) {
+  border-bottom: 1px solid var(--sl-color-hairline);
+  padding-bottom: 0.4em;
+}
+
+.sl-markdown-content h2:not(:where(.not-content *)):not(:first-child) {
+  margin-top: 2.75em;
+}
+
+.sl-markdown-content h3:not(:where(.not-content *)):not(:first-child) {
+  margin-top: 2.25em;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--sl-color-text-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--sl-color-text-accent) 40%, transparent);
+}
+
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: var(--sl-color-text-accent);
+}
+
+/* Inline code + CLI flags: kbd-like chip */
+.sl-markdown-content code:not(:where(.not-content *, .expressive-code *)) {
+  background-color: var(--sl-color-bg-inline-code);
+  border: 1px solid var(--sl-color-hairline);
+  padding: 0.05em 0.35em;
+  font-size: 0.85em;
+}
+
+.sl-markdown-content hr:not(:where(.not-content *)) {
+  border: 0;
+  border-top: 1px solid var(--sl-color-hairline);
+}
+
+/* ---------------------------------------------------------------- */
+/* 5. Asides: colored left rule + stamp label, no icon               */
+/* ---------------------------------------------------------------- */
+
+.starlight-aside {
+  background-color: var(--sl-color-gray-6);
+  border-inline-start: 2px solid var(--sl-color-asides-border);
+  padding: 1rem 1.25rem;
+}
+
+.starlight-aside__title {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.starlight-aside__icon {
+  display: none; /* the uppercase stamp label carries the signal */
+}
+
+/* ---------------------------------------------------------------- */
+/* 6. Header chrome                                                  */
+/* ---------------------------------------------------------------- */
+
+.site-title {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--sl-color-white);
+}
+
+/* Square, bordered search trigger with mono placeholder */
+button[data-open-modal] {
+  border: 1px solid var(--sl-color-hairline);
+  background-color: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-3);
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-xs);
+}
+
+button[data-open-modal]:hover {
+  border-color: var(--sl-color-gray-4);
+  color: var(--sl-color-text);
+}
+
+starlight-theme-select select {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-xs);
+}
+
+/* ---------------------------------------------------------------- */
+/* 7. Sidebar                                                        */
+/* ---------------------------------------------------------------- */
+
+/* Group labels: uppercase mono micro-labels over a hairline */
+.sidebar-content summary {
+  border-bottom: 1px solid var(--sl-color-hairline-light);
+  padding-block: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.sidebar-content .group-label .large {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sl-color-gray-3);
+}
+
+.sidebar-content .caret {
+  color: var(--sl-color-gray-4);
+}
+
+.sidebar-content a {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-xs); /* 13px at every breakpoint */
+  /* reserve the rule so activation doesn't shift text */
+  border-inline-start: 2px solid transparent;
+}
+
+/* Active item: teal left rule + teal text, no pill */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  background-color: transparent;
+  color: var(--sl-color-text-accent);
+  border-inline-start-color: var(--sl-color-text-accent);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- */
+/* 8. Right ToC                                                      */
+/* ---------------------------------------------------------------- */
+
+.right-sidebar-panel h2 {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--sl-color-gray-3);
+}
+
+mobile-starlight-toc nav {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+}
+
+/* ---------------------------------------------------------------- */
+/* 9. Footer + pagination                                            */
+/* ---------------------------------------------------------------- */
+
+footer.sl-flex .meta {
+  border-top: 1px solid var(--sl-color-hairline);
+  padding-top: 1.25rem;
+}
+
+footer.sl-flex .meta :is(a, p) {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-xs);
+}
+
+/* Square bordered pagination blocks with mono labels */
+.pagination-links a {
+  border: 1px solid var(--sl-color-hairline);
+  box-shadow: none;
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+}
+
+.pagination-links a:hover {
+  border-color: var(--sl-color-text-accent);
+}
+
+.pagination-links .link-title {
+  font-size: var(--sl-text-base);
+  letter-spacing: -0.01em;
+}
+
+/* ---------------------------------------------------------------- */
+/* 10. Cards (landing grid and elsewhere)                            */
+/* ---------------------------------------------------------------- */
+
+.card {
+  border: 1px solid var(--sl-color-hairline);
+  background-color: var(--sl-color-bg);
+  /* single offset rule — the "print" effect; still no blur, no depth */
+  box-shadow: 4px 4px 0 var(--sl-color-hairline);
+}
+
+.card > .title {
+  font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+  font-size: var(--sl-text-base);
+  letter-spacing: -0.01em;
+}
+
+.card .icon {
+  color: var(--sl-color-text-accent);
+}
+
+/* Landing grid: three equal columns on wide screens, equal-height cards —
+   the stock two-column stagger left the third card orphaned and misaligned */
+[data-has-hero] .card-grid {
+  align-items: stretch;
+}
+
+@media (min-width: 72rem) {
+  [data-has-hero] .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Logo accent for the inline mark (Hero) */
+:root {
+  --fc-logo-accent: #2dd4bf;
+}
+
+:root[data-theme='light'] {
+  --fc-logo-accent: #0f766e;
+}
+
+/* ---------------------------------------------------------------- */
+/* 11. Motion                                                        */
+/* ---------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

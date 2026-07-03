@@ -1,0 +1,31 @@
+---
+/**
+ * fast-classifier mark — "the filed row": a ledger box with three rows, the
+ * middle row (teal) sliding out through a gap in the right edge, i.e. an
+ * email being filed out of the inbox. Ink strokes use currentColor so the
+ * mark adapts to theme; the accent follows --fc-logo-accent.
+ */
+interface Props {
+  size?: number
+}
+const { size = 40 } = Astro.props
+---
+
+<svg
+  width={size}
+  height={Math.round((size * 32) / 36)}
+  viewBox="0 0 36 32"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
+>
+  <path
+    d="M29 11.5 V3 H3 V29 H29 V20.5"
+    stroke="currentColor"
+    stroke-width="2.6"
+    stroke-linecap="square"
+  ></path>
+  <line x1="8" y1="9.5" x2="23" y2="9.5" stroke="currentColor" stroke-width="2.6"></line>
+  <rect x="8" y="14" width="27" height="4" fill="var(--fc-logo-accent, #0f766e)"></rect>
+  <line x1="8" y1="22.5" x2="23" y2="22.5" stroke="currentColor" stroke-width="2.6"></line>
+</svg>

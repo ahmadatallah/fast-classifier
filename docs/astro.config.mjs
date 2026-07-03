@@ -9,6 +9,11 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'fast-classifier',
+      logo: {
+        light: './src/assets/logo-light.svg',
+        dark: './src/assets/logo-dark.svg',
+        alt: '',
+      },
       description:
         'Deterministic, rule-first email classifier for Fastmail: sweep newsletters, file everything into labels, flag what needs action — dry-run first, never deletes.',
       social: [
@@ -20,6 +25,28 @@ export default defineConfig({
       ],
       editLink: {
         baseUrl: 'https://github.com/ahmadatallah/fast-classifier/edit/main/docs/',
+      },
+      // "Audit Ledger" theme: self-hosted fonts must load before the
+      // stylesheet that references them.
+      customCss: [
+        '@fontsource-variable/jetbrains-mono',
+        '@fontsource-variable/inter',
+        './src/styles/custom.css',
+      ],
+      components: {
+        Hero: './src/components/Hero.astro',
+      },
+      expressiveCode: {
+        themes: ['github-dark', 'github-light'],
+        // keep code-block chrome (titlebars, tabs, buttons) on our --sl-color-*
+        // palette instead of the syntax theme's own UI colors
+        useStarlightUiThemeColors: true,
+        styleOverrides: {
+          borderRadius: '0',
+          borderColor: 'var(--sl-color-hairline)',
+          codeFontFamily: "'JetBrains Mono Variable', ui-monospace, monospace",
+          uiFontFamily: "'JetBrains Mono Variable', ui-monospace, monospace",
+        },
       },
       plugins: [
         starlightTypeDoc({

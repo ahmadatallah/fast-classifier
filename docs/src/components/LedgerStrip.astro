@@ -1,0 +1,79 @@
+---
+/**
+ * Full-width bordered ledger row: the numbers from the founding session,
+ * as number-above-label cells separated by hairlines.
+ */
+const entries = [
+  { value: '6,551', label: 'emails scanned' },
+  { value: '3,849', label: 'newsletters swept' },
+  { value: '5,573', label: 'filed into 14 labels' },
+  { value: '87%', label: 'rule coverage' },
+]
+---
+
+<div class="ledger-strip not-content">
+  {
+    entries.map(({ value, label }) => (
+      <div class="cell">
+        <span class="value">{value}</span>
+        <span class="label">{label}</span>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .ledger-strip {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border: 1px solid var(--sl-color-hairline);
+    margin-top: 2.5rem;
+  }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 1.15rem 1.25rem;
+  }
+
+  /* hairline separators: vertical between columns, horizontal between rows */
+  .cell:nth-child(even) {
+    border-inline-start: 1px solid var(--sl-color-hairline);
+  }
+
+  .cell:nth-child(n + 3) {
+    border-top: 1px solid var(--sl-color-hairline);
+  }
+
+  .value {
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: var(--sl-text-2xl);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--sl-color-white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label {
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: var(--sl-text-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--sl-color-gray-3);
+  }
+
+  @media (min-width: 40rem) {
+    .ledger-strip {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .cell + .cell {
+      border-inline-start: 1px solid var(--sl-color-hairline);
+    }
+
+    .cell:nth-child(n + 3) {
+      border-top: 0;
+    }
+  }
+</style>

@@ -7,20 +7,25 @@ hero:
   actions:
     - text: Quickstart
       link: quickstart/
-      icon: right-arrow
+      variant: primary
     - text: GitHub
       link: https://github.com/ahmadatallah/fast-classifier
-      icon: github
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components'
+import LedgerStrip from '../../components/LedgerStrip.astro'
+import TerminalSession from '../../components/TerminalSession.astro'
+
+<LedgerStrip />
+
+<TerminalSession />
 
 ## Born from a real inbox
 
 fast-classifier was born from a live session that organized a real 6,551-email inbox: **3,849 newsletters swept in one run**, **5,573 emails filed into 14 labels**, and **87% rule coverage** reached by iterating recon reports instead of training anything. The one-off scripts from that session are preserved read-only in [`reference/`](https://github.com/ahmadatallah/fast-classifier/tree/main/reference); this project is those scripts hardened into a typed, tested library with a CLI and an MCP server. Every [core concept](concepts/01-mcp-handshake/) shipped from that session.
 
-<CardGrid stagger>
+<CardGrid>
   <Card title="CLI" icon="rocket">
     The canonical loop: `analyze` → `plan` → iterate rules → `sweep --execute` → `file --execute` →
     `needs-action` → `verify`. Every mutating command is dry-run until you pass `--execute`.
