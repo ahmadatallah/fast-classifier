@@ -1,6 +1,6 @@
 ---
 title: MCP Server
-description: Run fast-classifier-mcp on stdio, the 10 tools it exposes, and how writes are gated behind --allow-execute.
+description: Run fast-classifier-mcp on stdio, the 11 tools it exposes, and how writes are gated behind --allow-execute.
 ---
 
 `fast-classifier-mcp` runs an MCP server on stdio: it loads the config from the working directory, connects the configured provider, and reads the matching token from the environment. Register it with an MCP client, e.g.:
@@ -13,13 +13,14 @@ claude mcp add fast-classifier \
 
 Human-facing output goes to stderr; stdout carries the protocol.
 
-## The 10 tools
+## The 11 tools
 
 | Tool                   | What it does                                                                                                         | Kind      |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------- | --------- |
 | `classify_sender`      | pure rule-engine lookup: which category would mail from this sender file into? No mailbox access                     | read-only |
 | `analyze_inbox`        | read-only recon: who fills the inbox, tallied by sender and by root domain                                           | read-only |
 | `plan_classification`  | coverage report: how the current rules would classify the inbox, plus top unmatched senders to write rules for       | read-only |
+| `suggest_rules`        | scan the inbox, match uncovered root domains against the built-in generic domain catalog, and return rule suggestions, the top unknown domains, and a paste-ready config fragment | read-only |
 | `sweep_newsletters`    | label and archive bulk mail matching the sweep heuristic, keep-list excluded; accepts a `targetLabel` override       | mutating  |
 | `file_inbox`           | classify inbox mail by the configured rules, label per category, then archive; accepts a `categories` filter         | mutating  |
 | `score_needs_action`   | score the recent inbox window for mail likely needing a human response; `apply: true` tags candidates, never archives | mutating  |

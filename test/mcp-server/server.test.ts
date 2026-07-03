@@ -45,6 +45,7 @@ const ALL_TOOLS = [
   'classify_sender',
   'analyze_inbox',
   'plan_classification',
+  'suggest_rules',
   'sweep_newsletters',
   'file_inbox',
   'score_needs_action',
@@ -58,6 +59,7 @@ const READ_ONLY_TOOLS = [
   'classify_sender',
   'analyze_inbox',
   'plan_classification',
+  'suggest_rules',
   'list_labels',
   'get_effective_config',
   'verify_run',
@@ -139,6 +141,74 @@ describe('createServer', () => {
       expect(report.scanned).toBe(3)
       expect(report.senders[0]).toMatchObject({ email: 'a@one.example', count: 2 })
       expect(report.meta.dryRun).toBe(true)
+    } finally {
+      await close()
+    }
+  })
+
+  test('suggest_rules suggests catalog rules from a seeded inbox without mutating anything', async () => {
+    const provider = createMemoryMailProvider([
+      // catalog domain, uncovered -> suggestion (test fixture; brand domains are the subject matter)
+      makeEmail({ id: 'g1', from: { name: 'GitHub', email: 'notifications@github.com' } }),
+      makeEmail({ id: 'g2', from: { name: 'GitHub', email: 'notifications@github.com' } }),
+      // no catalog entry -> unknown
+      makeEmail({ id: 'u1', from: { name: 'Startup', email: 'news@somestartup.example' } }),
+      makeEmail({ id: 'u2', from: { name: 'Startup', email: 'news@somestartup.example' } }),
+      // covered by the config's domain rule -> alreadyCovered
+      makeEmail({ id: 's1', from: { name: 'Shop', email: 'orders@shop.example' } }),
+      // below the default minCount of 2 -> dropped entirely
+      makeEmail({ id: 'once', from: { name: 'Once', email: 'hi@once.example' } }),
+    ])
+    const mutations: string[] = []
+    provider.ensureLabels = () => {
+      mutations.push('ensureLabels')
+      return Promise.reject(new Error('mutated'))
+    }
+    provider.addLabels = () => {
+      mutations.push('addLabels')
+      return Promise.reject(new Error('mutated'))
+    }
+    provider.archive = () => {
+      mutations.push('archive')
+      return Promise.reject(new Error('mutated'))
+    }
+    const { client, close } = await connect(provider, { config: RULE_CONFIG })
+    try {
+      const result = await client.callTool({ name: 'suggest_rules', arguments: {} })
+      expect(result.isError).toBeFalsy()
+      const report = result.structuredContent as {
+        scanned: number
+        suggestions: {
+          domain: string
+          category: string
+          count: number
+          source: string
+          sampleSenders: string[]
+        }[]
+        unknown: { domain: string; count: number; sampleSenders: string[] }[]
+        alreadyCovered: number
+        categories: { name: string }[]
+        configFragment: string
+      }
+      expect(report.scanned).toBe(6)
+      expect(report.suggestions).toEqual([
+        {
+          domain: 'github.com',
+          category: 'Development',
+          count: 2,
+          source: 'catalog',
+          sampleSenders: ['notifications@github.com'],
+        },
+      ])
+      expect(report.unknown).toEqual([
+        { domain: 'somestartup.example', count: 2, sampleSenders: ['news@somestartup.example'] },
+      ])
+      expect(report.alreadyCovered).toBe(1)
+      expect(report.categories.map((c) => c.name)).toEqual(['Development'])
+      expect(report.configFragment).toContain(
+        "{ kind: 'domain', domain: 'github.com', category: 'Development' },",
+      )
+      expect(mutations).toEqual([])
     } finally {
       await close()
     }

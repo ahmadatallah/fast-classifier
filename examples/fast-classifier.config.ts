@@ -122,8 +122,15 @@ export default defineConfig({
   detection: {
     // mail from your own domains files as Personal
     personalDomains: ['your-domain.example'],
+    // the origin session's FULL brand list, verbatim — the built-in default
+    // was trimmed to global household names, so the regional/niche long tail
+    // (haspa, taxfix, lieferando, zalando, deutschebahn, …) lives here now
+    brandNamePattern:
+      'uber|linkedin|amazon|paypal|apple|google|github|klarna|revolut|kraken|stripe|netflix|substack|meetup|crunchbase|ahrefs|xing|bolt|lieferando|wolt|trip|airbnb|booking|o2|ionos|fastmail|cloudflare|instantdb|hashcards|val\\.town|executeprogram|samsung|microsoft|audible|spotify|discord|steam|adobe|notion|slack|gorillas|holafly|mubi|taxfix|schufa|haspa|n26|vivid|deutschebahn|flixbus|dhl|hermes|ups|zalando|mediamarkt',
   },
 
   sweep: { targetLabel: 'Promotion' },
-  needsAction: { label: 'Needs action', windowDays: 60 },
+  // languages ['en', 'de'] keeps the origin inbox's bilingual keyword scoring;
+  // the built-in default is English-only
+  needsAction: { label: 'Needs action', windowDays: 60, languages: ['en', 'de'] },
 })

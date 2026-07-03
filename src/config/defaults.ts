@@ -8,105 +8,139 @@ export interface WeightedKeyword {
   weight: number
 }
 
+const weigh = (weight: number, phrases: readonly string[]): readonly WeightedKeyword[] =>
+  phrases.map((phrase) => ({ phrase, weight }))
+
 /**
- * Needs-action HIGH signals (+3 each). Bilingual EN+DE by necessity — a German
- * user's inbox scores on "Frist" as much as "deadline". Trailing spaces are
- * significant ('sign ' avoids matching 'design').
+ * Needs-action keyword LANGUAGE PACKS. HIGH signals score +3 each; exclusions
+ * (receipts, shipping, newsletters, confirmations) score -2 each. The origin
+ * session's bilingual list is split by language so the generic default can be
+ * English-only (needsAction.languages defaults to ['en']); German users opt in
+ * with languages: ['en', 'de']. Trailing spaces in phrases are significant.
+ *
+ * Deviation from the origin list: the Dutch-ish stray 'actie' was dropped —
+ * it belongs to neither pack.
+ */
+export const NEEDS_ACTION_PACKS: Record<
+  'en' | 'de',
+  { high: readonly WeightedKeyword[]; exclusion: readonly WeightedKeyword[] }
+> = {
+  en: {
+    high: weigh(3, [
+      'action required',
+      'action needed',
+      'please confirm',
+      'confirm your',
+      'verify your',
+      'please verify',
+      'identity',
+      'respond',
+      'response needed',
+      'reply',
+      'deadline',
+      'overdue',
+      'past due',
+      'payment failed',
+      'failed payment',
+      'invoice',
+      'reminder',
+      'appointment',
+      // deviation from the reference: the bare phrase 'sign ' matched mid-word
+      // ('design update') — dropped; 'signature'/'to sign'/'docusign' (and the
+      // German forms in the de pack) keep the coverage
+      'signature',
+      'docusign',
+      'to sign',
+      'complete your',
+      'expires',
+      'expiring',
+      'renew',
+      'renewal',
+      'suspended',
+      'kyc',
+      'upload',
+      'missing information',
+      'outstanding',
+      'rsvp',
+      'interview',
+      'confirm subscription',
+      'update your payment',
+      'last chance to',
+    ]),
+    exclusion: weigh(-2, [
+      'receipt',
+      'your order',
+      'has shipped',
+      'shipped',
+      'delivered',
+      'newsletter',
+      'digest',
+      'unsubscribe',
+      'welcome to',
+      'thanks for',
+      'thank you for',
+      'order confirmation',
+      'payment received',
+      'you paid',
+      'has been sent',
+      'statement is ready',
+    ]),
+  },
+  de: {
+    high: weigh(3, [
+      'bestätige',
+      'bestätigung',
+      'antworten',
+      'frist',
+      'fällig',
+      'überfällig',
+      'zahlung fehlgeschlagen',
+      'rechnung',
+      'mahnung',
+      'erinnerung',
+      'zahlungserinnerung',
+      'termin',
+      'unterschrift',
+      'unterschreiben',
+      'zu unterschreiben',
+      'vervollständigen',
+      'läuft ab',
+      'verlängern',
+      'gesperrt',
+      'nachweis',
+      'ausstehend',
+      'einladung',
+      'bewerbung',
+      'verifizieren',
+      'zahlungsmethode',
+      'abgelaufen',
+    ]),
+    exclusion: weigh(-2, [
+      'quittung',
+      'bestellung',
+      'versand',
+      'versandbestätigung',
+      'zugestellt',
+      'kontoauszug',
+    ]),
+  },
+}
+
+/**
+ * @deprecated Full bilingual unions kept only for the package export surface;
+ * the schema/compiler now resolve keywords from NEEDS_ACTION_PACKS via
+ * needsAction.languages.
  */
 export const DEFAULT_HIGH_KEYWORDS: readonly WeightedKeyword[] = [
-  'action required',
-  'action needed',
-  'please confirm',
-  'confirm your',
-  'verify your',
-  'please verify',
-  'identity',
-  'bestätige',
-  'bestätigung',
-  'antworten',
-  'respond',
-  'response needed',
-  'reply',
-  'deadline',
-  'frist',
-  'fällig',
-  'overdue',
-  'überfällig',
-  'past due',
-  'payment failed',
-  'zahlung fehlgeschlagen',
-  'failed payment',
-  'invoice',
-  'rechnung',
-  'mahnung',
-  'reminder',
-  'erinnerung',
-  'zahlungserinnerung',
-  'appointment',
-  'termin',
-  // deviation from the reference: the bare phrase 'sign ' matched mid-word
-  // ('design update') — dropped; 'signature'/'to sign'/'docusign'/German
-  // forms below keep the coverage
-  'signature',
-  'unterschrift',
-  'unterschreiben',
-  'docusign',
-  'to sign',
-  'zu unterschreiben',
-  'complete your',
-  'vervollständigen',
-  'expires',
-  'expiring',
-  'läuft ab',
-  'verlängern',
-  'renew',
-  'renewal',
-  'suspended',
-  'gesperrt',
-  'kyc',
-  'upload',
-  'nachweis',
-  'missing information',
-  'ausstehend',
-  'outstanding',
-  'rsvp',
-  'einladung',
-  'interview',
-  'bewerbung',
-  'actie',
-  'verifizieren',
-  'confirm subscription',
-  'update your payment',
-  'zahlungsmethode',
-  'abgelaufen',
-  'last chance to',
-].map((phrase) => ({ phrase, weight: 3 }))
+  ...NEEDS_ACTION_PACKS.en.high,
+  ...NEEDS_ACTION_PACKS.de.high,
+]
 
-/** Needs-action exclusions (-2 each): receipts, shipping, newsletters, confirmations. */
+/** @deprecated See DEFAULT_HIGH_KEYWORDS. */
 export const DEFAULT_EXCLUSION_KEYWORDS: readonly WeightedKeyword[] = [
-  'receipt',
-  'quittung',
-  'your order',
-  'bestellung',
-  'has shipped',
-  'shipped',
-  'versand',
-  'versandbestätigung',
-  'delivered',
-  'zugestellt',
-  'newsletter',
-  'digest',
-  'unsubscribe',
-  'welcome to',
-  'thanks for',
-  'thank you for',
-  'order confirmation',
-  'payment received',
-  'you paid',
-  'has been sent',
-  'statement is ready',
-  'kontoauszug',
-].map((phrase) => ({ phrase, weight: -2 }))
+  ...NEEDS_ACTION_PACKS.en.exclusion,
+  ...NEEDS_ACTION_PACKS.de.exclusion,
+]
 
 /**
  * Automated-sender detector (matched against the FROM ADDRESS): the inverse of
@@ -115,9 +149,16 @@ export const DEFAULT_EXCLUSION_KEYWORDS: readonly WeightedKeyword[] = [
 export const DEFAULT_AUTOMATED_PATTERN =
   'no.?reply|newsletter|notification|notifications|team@|support@|info@|hello@|service@|noreply|automated|updates?@|marketing|billing|invoice|receipt|do.?not.?reply|mailer|news@|@mail\\.|@email\\.|@e\\.|@em\\.|@updates?\\.|@notify'
 
-/** Big-brand detector (matched against address + display name). Verbatim from reference/human.mjs. */
+/**
+ * Big-brand detector (matched against address + display name). Trimmed from
+ * the reference/human.mjs original to GLOBAL household names only — tokens a
+ * random US/UK/EU user would recognize. The origin session's regional/niche
+ * long tail (haspa, taxfix, lieferando, zalando, deutschebahn, instantdb,
+ * val.town, …) moved verbatim into examples/fast-classifier.config.ts as a
+ * detection.brandNamePattern override.
+ */
 export const DEFAULT_BRAND_PATTERN =
-  'uber|linkedin|amazon|paypal|apple|google|github|klarna|revolut|kraken|stripe|netflix|substack|meetup|crunchbase|ahrefs|xing|bolt|lieferando|wolt|trip|airbnb|booking|o2|ionos|fastmail|cloudflare|instantdb|hashcards|val\\.town|executeprogram|samsung|microsoft|audible|spotify|discord|steam|adobe|notion|slack|gorillas|holafly|mubi|taxfix|schufa|haspa|n26|vivid|deutschebahn|flixbus|dhl|hermes|ups|zalando|mediamarkt'
+  'uber|linkedin|amazon|paypal|apple|google|github|klarna|revolut|kraken|stripe|netflix|substack|xing|bolt|airbnb|booking|fastmail|cloudflare|samsung|microsoft|audible|spotify|discord|steam|adobe|notion|slack|n26|dhl|ups'
 
 /**
  * Exclusion for the needs-action "personal sender awaiting reply" bonus,

@@ -5,6 +5,7 @@ import { InvalidArgumentError, type Command } from 'commander'
 import { openTsvAudit, writeReport } from '../audit/index.js'
 import { compileConfig } from '../config/compile.js'
 import { loadConfig } from '../config/load.js'
+import type { ClassifierConfig } from '../config/schema.js'
 import type { LabelExpectation, PipelineContext, VerifyExpectations } from '../pipeline/index.js'
 import {
   analyzeInbox,
@@ -15,6 +16,8 @@ import {
   verifyRun,
 } from '../pipeline/index.js'
 import { allowAll, denyAll, interactiveConfirm } from '../safety/index.js'
+import { suggestRules } from '../suggest/index.js'
+import type { SuggestionResult } from '../suggest/index.js'
 import {
   formatAnalyze,
   formatEnsured,
@@ -23,10 +26,20 @@ import {
   formatLabels,
   formatNeedsAction,
   formatPlan,
+  formatSuggest,
   formatSweep,
   formatVerify,
 } from './output.js'
 import type { ProviderFactory } from './provider-factory.js'
+import {
+  configTarget,
+  readlinePrompt,
+  renderConfigFile,
+  renderFragment,
+  selectRules,
+  writeSuggestedConfig,
+} from './suggest-flow.js'
+import type { AcceptedRule, PromptFn, SuggestIo } from './suggest-flow.js'
 
 export interface CliDeps {
   providerFactory: ProviderFactory
@@ -37,6 +50,8 @@ export interface CliDeps {
   exitOverride?: boolean
   /** failure-code sink; defaults to assigning process.exitCode */
   setExitCode?: (code: number) => void
+  /** injectable question gate for the suggest flow; tests script the answers */
+  prompt?: PromptFn
 }
 
 interface GlobalOpts {
@@ -144,6 +159,22 @@ const emit = async (
 const abortedByConfirm = (deps: CliDeps, command: string): void => {
   deps.stderr.write(`${command} aborted: confirmation declined (pass --yes to approve)\n`)
   exitWith(deps, 1)
+}
+
+const suggestIo = (deps: CliDeps): SuggestIo => ({
+  out: (chunk) => deps.stdout.write(chunk),
+  prompt: deps.prompt ?? readlinePrompt(),
+})
+
+const printFragment = (
+  deps: CliDeps,
+  result: SuggestionResult,
+  accepted: AcceptedRule[],
+  config: ClassifierConfig,
+): void => {
+  const fragment = renderFragment(result, accepted, config)
+  if (fragment === '') return
+  deps.stdout.write(`\nPaste into your defineConfig({ ... }) config:\n\n${fragment}`)
 }
 
 /** `Name` = exists, `Name=N` = exactly N emails, `Name>=N` = at least N. */
@@ -308,17 +339,74 @@ export const registerCommands = (program: Command, deps: CliDeps): void => {
       ),
     )
 
+  sub(
+    program,
+    'suggest',
+    'read-only scan: suggest config rules for your senders from the built-in domain catalog',
+  )
+    .argument('[dir]', 'directory --write places fast-classifier.config.ts into', '.')
+    .option('--interactive', 'walk suggestions and unknown domains with prompts (default on a TTY)')
+    .option('--no-interactive', 'never prompt; accept every catalog suggestion')
+    .option('--write', 'write fast-classifier.config.ts when none exists (never overwrites)')
+    .action(
+      wrap(
+        deps,
+        async (dir: string, cmdOpts: { interactive?: boolean; write?: boolean }, cmd: Command) => {
+          const { ctx, opts } = await createContext(cmd, deps, false)
+          const report = await analyzeInbox(ctx)
+          const result = suggestRules(report.domains, ctx.compiled)
+          await emit(deps, opts, 'suggest', result, formatSuggest(result))
+
+          const interactive =
+            opts.json !== true && (cmdOpts.interactive ?? process.stdin.isTTY === true)
+          const accepted = await selectRules(result, ctx.config, interactive, suggestIo(deps))
+
+          if (cmdOpts.write === true) {
+            const target = configTarget(dir)
+            if (existsSync(target)) {
+              deps.stderr.write(
+                `refusing to modify existing config: ${target} — paste the fragment yourself\n`,
+              )
+              printFragment(deps, result, accepted, ctx.config)
+              return
+            }
+            if (accepted.length === 0) {
+              deps.stdout.write('no suggestions accepted — no config written\n')
+              return
+            }
+            await writeSuggestedConfig(target, renderConfigFile(accepted, ctx.config))
+            deps.stdout.write(`wrote ${target}\n`)
+            return
+          }
+          if (opts.json !== true) printFragment(deps, result, accepted, ctx.config)
+        },
+      ),
+    )
+
   program
     .command('init')
     .description('write a starter fast-classifier.config.ts (refuses to overwrite)')
     .argument('[dir]', 'directory to write the config into', '.')
+    .option('--from-inbox', 'scan your inbox and build the config from suggestions instead')
     .action(
-      wrap(deps, async (dir: string) => {
+      wrap(deps, async (dir: string, cmdOpts: { fromInbox?: boolean }, cmd: Command) => {
         const target = resolve(dir, 'fast-classifier.config.ts')
         if (existsSync(target)) {
           throw new Error(`refusing to overwrite existing config: ${target}`)
         }
         await mkdir(resolve(dir), { recursive: true })
+        if (cmdOpts.fromInbox === true) {
+          const { ctx } = await createContext(cmd, deps, false)
+          const report = await analyzeInbox(ctx)
+          const result = suggestRules(report.domains, ctx.compiled)
+          deps.stdout.write(formatSuggest(result))
+          const interactive = process.stdin.isTTY === true
+          const accepted = await selectRules(result, ctx.config, interactive, suggestIo(deps))
+          // 'wx' re-checks atomically in case the file appeared since existsSync
+          await writeSuggestedConfig(target, renderConfigFile(accepted, ctx.config))
+          deps.stdout.write(`wrote ${target}\n${INIT_GUIDANCE}`)
+          return
+        }
         // 'wx' re-checks atomically in case the file appeared since existsSync
         await writeFile(target, STARTER_CONFIG, { flag: 'wx' })
         deps.stdout.write(`wrote ${target}\n${INIT_GUIDANCE}`)

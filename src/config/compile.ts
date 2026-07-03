@@ -1,4 +1,4 @@
-import type { WeightedKeyword } from './defaults.js'
+import { NEEDS_ACTION_PACKS, type WeightedKeyword } from './defaults.js'
 import type { CategoryDef, ClassifierConfig, OpsConfig } from './schema.js'
 
 export interface NameRule {
@@ -14,7 +14,10 @@ export interface CompiledNeedsAction {
   unreadBonus: number
   personalNeedsReplyBonus: number
   windowDays: number
-  /** phrases pre-lowercased; trailing spaces preserved */
+  /**
+   * explicit user keywords when given, otherwise the union of the selected
+   * language packs; phrases pre-lowercased; trailing spaces preserved
+   */
   high: WeightedKeyword[]
   exclusion: WeightedKeyword[]
 }
@@ -67,8 +70,13 @@ export const compileConfig = (config: ClassifierConfig): CompiledRules => {
   }
 
   const d = config.detection
-  const lowerKeywords = (list: WeightedKeyword[]) =>
+  const lowerKeywords = (list: readonly WeightedKeyword[]) =>
     list.map(({ phrase, weight }) => ({ phrase: phrase.toLowerCase(), weight }))
+
+  const na = config.needsAction
+  const packLanguages = [...new Set(na.languages)]
+  const fromPacks = (kind: 'high' | 'exclusion'): WeightedKeyword[] =>
+    packLanguages.flatMap((lang) => [...NEEDS_ACTION_PACKS[lang][kind]])
 
   return {
     senderMap,
@@ -87,13 +95,13 @@ export const compileConfig = (config: ClassifierConfig): CompiledRules => {
     personalReplyExclusionRe: new RegExp(d.personalReplyExclusionPattern, 'i'),
     categories: new Map(config.categories.map((c) => [c.name, c])),
     needsAction: {
-      label: config.needsAction.label,
-      threshold: config.needsAction.threshold,
-      unreadBonus: config.needsAction.unreadBonus,
-      personalNeedsReplyBonus: config.needsAction.personalNeedsReplyBonus,
-      windowDays: config.needsAction.windowDays,
-      high: lowerKeywords(config.needsAction.highKeywords),
-      exclusion: lowerKeywords(config.needsAction.exclusionKeywords),
+      label: na.label,
+      threshold: na.threshold,
+      unreadBonus: na.unreadBonus,
+      personalNeedsReplyBonus: na.personalNeedsReplyBonus,
+      windowDays: na.windowDays,
+      high: lowerKeywords(na.highKeywords ?? fromPacks('high')),
+      exclusion: lowerKeywords(na.exclusionKeywords ?? fromPacks('exclusion')),
     },
     sweep: config.sweep,
     ops: config.ops,

@@ -27,14 +27,33 @@ Accepted before or after the subcommand — both `fast-classifier --execute swee
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `analyze`                                                                    | read-only recon: who fills the inbox, by sender and root domain                                                                                                                  |
 | `plan`                                                                       | classify without touching anything: coverage + unmatched senders                                                                                                                 |
+| `suggest [dir] [--interactive] [--no-interactive] [--write]`                 | read-only scan: suggest config rules for your senders from the built-in domain catalog, plus a paste-ready config fragment                                                       |
 | `sweep`                                                                      | label + archive bulk mail (keep-list wins; dry-run by default); audits to `sweep.log.tsv`                                                                                        |
 | `file`                                                                       | file classified mail into per-category labels (dry-run by default); audits to `file.log.tsv`                                                                                     |
 | `needs-action [--apply]`                                                     | score the recent window for mail needing a human response; `--apply` tags candidates with the needs-action label (never archives) — tagging requires `--apply` _and_ `--execute` |
 | `labels list`                                                                | list labels with email totals                                                                                                                                                    |
 | `labels ensure <names...>`                                                   | create the given labels if missing, nested as `'Parent/Child'` (dry-run by default)                                                                                              |
 | `verify [--contains <addrs...>] [--cleared <addrs...>] [--label <specs...>]` | post-run assertions; label specs are `'Name'` (exists), `'Name=N'` (exactly N), `'Name>=N'` (at least N)                                                                         |
-| `init [dir]`                                                                 | write a starter `fast-classifier.config.ts` (refuses to overwrite)                                                                                                               |
+| `init [dir] [--from-inbox]`                                                  | write a starter `fast-classifier.config.ts` (refuses to overwrite); `--from-inbox` scans your inbox and builds the config from suggestions instead                               |
 | `mcp`                                                                        | run the MCP server on stdio — prefer the standalone `fast-classifier-mcp` bin                                                                                                    |
+
+### `suggest` in detail
+
+`suggest` runs the analyze scan (read-only), drops root domains your config already covers, and matches the rest against the built-in catalog of well-known senders in 12 generic categories. Catalog hits become rule suggestions; everything else comes back as an unknown domain, sorted by volume, for you to decide on.
+
+- `--interactive` — walk the results with prompts: one Y/n gate for the whole catalog batch, then a per-domain walk over the unknowns where you pick a category by number, `s` (or Enter) skips, and `q` stops the walk. This is the default on a TTY; `--json` disables prompting.
+- `--no-interactive` — never prompt; accept every catalog suggestion (unknown domains are only reported).
+- `--write` — write the accepted rules as a fresh `fast-classifier.config.ts` into the `[dir]` argument (default `.`). It never overwrites: with an existing config it prints the paste-ready fragment instead.
+
+Without `--write`, `suggest` prints the fragment to paste into your `defineConfig` — including any category definitions your config is missing. `--max` caps the scan like everywhere else.
+
+```sh
+fast-classifier suggest                    # suggestions + unknowns + paste-ready fragment
+fast-classifier suggest --no-interactive --write   # accept the catalog, write a fresh config
+fast-classifier init --from-inbox          # bootstrap: build the starter config from your inbox
+```
+
+`init --from-inbox` is the same flow at bootstrap time: instead of the generic starter template it scans your inbox, lets you accept suggestions (prompting on a TTY), and writes the resulting config.
 
 ### `verify` in detail
 

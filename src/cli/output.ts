@@ -7,6 +7,7 @@ import type {
   SweepReport,
   VerifyReport,
 } from '../pipeline/index.js'
+import type { SuggestionResult } from '../suggest/index.js'
 import type { Label } from '../types.js'
 
 /** Plain padEnd table — the CLI has no formatting dependencies on purpose. */
@@ -141,6 +142,27 @@ export const formatVerify = (report: VerifyReport): string => {
     metaLine(report.meta),
     ...checks,
     report.passed ? 'verify: all checks passed' : 'verify: FAILED',
+    '',
+  ].join('\n')
+}
+
+export const formatSuggest = (result: SuggestionResult): string => {
+  const suggestions = table(
+    ['count', 'domain', 'category'],
+    result.suggestions.map((s) => [num(s.count), s.domain, s.category]),
+  )
+  const unknown = table(
+    ['count', 'domain', 'sample senders'],
+    result.unknown.map((u) => [num(u.count), u.domain, truncate(u.sampleSenders.join(', '), 60)]),
+  )
+  return [
+    `already covered by your config: ${result.alreadyCovered} domain(s)`,
+    '',
+    `Catalog suggestions (${result.suggestions.length}):`,
+    suggestions,
+    '',
+    `Unknown domains (${result.unknown.length}) — assign these yourself:`,
+    unknown,
     '',
   ].join('\n')
 }

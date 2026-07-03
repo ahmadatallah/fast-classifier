@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { isHumanSender } from '../../src/classify/human-sender.js'
 import { compileConfig } from '../../src/config/compile.js'
 import { classifierConfigSchema } from '../../src/config/schema.js'
+import exampleConfig from '../../examples/fast-classifier.config.js'
 
 const compiled = compileConfig(classifierConfigSchema.parse({}))
 
@@ -37,6 +38,27 @@ describe('isHumanSender', () => {
 
   test('brand tokens in the address are rejected', () => {
     expect(isHumanSender({ name: 'John Smith', email: 'john.smith@paypal.com' }, compiled)).toBe(
+      false,
+    )
+  })
+
+  test('default brand list is global household names only — regional tokens no longer match', () => {
+    // 'Haspa' (a Hamburg bank) left the built-in pattern with the generic split
+    expect(isHumanSender({ name: 'Haspa Direkt', email: 'jane.doe@gmail.com' }, compiled)).toBe(
+      true,
+    )
+    // global names still match
+    expect(isHumanSender({ name: 'Netflix Info', email: 'jane.doe@gmail.com' }, compiled)).toBe(
+      false,
+    )
+  })
+
+  test("the example config's brandNamePattern override restores the regional long tail", () => {
+    const example = compileConfig(classifierConfigSchema.parse(exampleConfig))
+    expect(isHumanSender({ name: 'Haspa Direkt', email: 'jane.doe@gmail.com' }, example)).toBe(
+      false,
+    )
+    expect(isHumanSender({ name: 'Zalando Lounge', email: 'jane.doe@gmail.com' }, example)).toBe(
       false,
     )
   })

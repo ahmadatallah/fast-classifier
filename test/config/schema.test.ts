@@ -13,6 +13,46 @@ describe('schema validation (review findings)', () => {
     expect(compiled.personalReplyExclusionRe.test('support@gmail.com')).toBe(true)
   })
 
+  test('needsAction defaults to the English pack only, with no explicit keyword lists', () => {
+    const config = classifierConfigSchema.parse({})
+    expect(config.needsAction.languages).toEqual(['en'])
+    expect(config.needsAction.highKeywords).toBeUndefined()
+    expect(config.needsAction.exclusionKeywords).toBeUndefined()
+    const phrases = compileConfig(config).needsAction.high.map((k) => k.phrase)
+    expect(phrases).toContain('deadline')
+    expect(phrases).not.toContain('frist')
+  })
+
+  test("languages ['en', 'de'] compiles to the union of both packs", () => {
+    const compiled = compileConfig(
+      classifierConfigSchema.parse({ needsAction: { languages: ['en', 'de'] } }),
+    )
+    const high = compiled.needsAction.high.map((k) => k.phrase)
+    expect(high).toContain('deadline')
+    expect(high).toContain('frist')
+    const exclusion = compiled.needsAction.exclusion.map((k) => k.phrase)
+    expect(exclusion).toContain('receipt')
+    expect(exclusion).toContain('kontoauszug')
+  })
+
+  test('unsupported language codes are rejected', () => {
+    const r = classifierConfigSchema.safeParse({ needsAction: { languages: ['fr'] } })
+    expect(r.success).toBe(false)
+  })
+
+  test('explicit keyword lists replace the packs in the compiled output', () => {
+    const compiled = compileConfig(
+      classifierConfigSchema.parse({
+        needsAction: {
+          highKeywords: [{ phrase: 'Sign HERE', weight: 5 }],
+          exclusionKeywords: [],
+        },
+      }),
+    )
+    expect(compiled.needsAction.high).toEqual([{ phrase: 'sign here', weight: 5 }])
+    expect(compiled.needsAction.exclusion).toEqual([])
+  })
+
   test('duplicate category names are rejected', () => {
     const r = classifierConfigSchema.safeParse({
       categories: [

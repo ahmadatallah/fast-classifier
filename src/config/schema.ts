@@ -3,8 +3,6 @@ import {
   DEFAULT_ACCOUNT_DOMAINS,
   DEFAULT_AUTOMATED_PATTERN,
   DEFAULT_BRAND_PATTERN,
-  DEFAULT_EXCLUSION_KEYWORDS,
-  DEFAULT_HIGH_KEYWORDS,
   DEFAULT_OPS,
   DEFAULT_PERSONAL_PROVIDER_DOMAINS,
   DEFAULT_PERSONAL_PROVIDER_PATTERN,
@@ -77,8 +75,12 @@ export const needsActionSchema = z
   .object({
     label: z.string().default('Needs action'),
     threshold: z.number().default(3),
-    highKeywords: z.array(weightedKeywordSchema).default([...DEFAULT_HIGH_KEYWORDS]),
-    exclusionKeywords: z.array(weightedKeywordSchema).default([...DEFAULT_EXCLUSION_KEYWORDS]),
+    /** built-in keyword packs to enable — English-only by default */
+    languages: z.array(z.enum(['en', 'de'])).default(['en']),
+    /** when present, REPLACES the language packs entirely */
+    highKeywords: z.array(weightedKeywordSchema).optional(),
+    /** when present, REPLACES the language packs entirely */
+    exclusionKeywords: z.array(weightedKeywordSchema).optional(),
     unreadBonus: z.number().default(1),
     personalNeedsReplyBonus: z.number().default(4),
     /** how far back to scan */

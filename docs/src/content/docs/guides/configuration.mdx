@@ -41,12 +41,46 @@ JSON configs work identically to TypeScript ones — rule patterns are plain str
 | `rules`       | the classifier rules: `{ kind: 'sender', address }` (exact address, wins first), `{ kind: 'domain', domain }` (registrable root domain), or `{ kind: 'name', pattern, onlyForDomains? }` (display-name regex, by default only consulted for relay domains) |
 | `keepList`    | exact sender addresses that must never be swept, even when their mail says "unsubscribe" — enforced twice, server-side and client-side                                                            |
 | `sweep`       | `targetLabel` (default `'Promotion'`), `textHeuristic` (default `'unsubscribe'`), optional `after` ISO date                                                                                        |
-| `needsAction` | `label`, `threshold` (default 3), `highKeywords` / `exclusionKeywords` (arrays of `{ phrase, weight }`), `unreadBonus`, `personalNeedsReplyBonus`, `windowDays` (default 60)                        |
-| `detection`   | relay/account/personal-provider domain lists, the user's own `personalDomains`, and the regex sources behind the [human-sender detector](../../concepts/08-human-sender-detector/)                     |
+| `needsAction` | `label`, `threshold` (default 3), `languages` (built-in keyword packs, default `['en']`), optional `highKeywords` / `exclusionKeywords` (arrays of `{ phrase, weight }` — when present they replace the packs), `unreadBonus`, `personalNeedsReplyBonus`, `windowDays` (default 60) |
+| `detection`   | relay/account/personal-provider domain lists, the user's own `personalDomains`, and the regex sources behind the [human-sender detector](../../concepts/08-human-sender-detector/) — including `brandNamePattern`, which defaults to global household names only                     |
 | `ops`         | batching and pacing: `batchSize` (≤ 50), `batchDelayMs`, `stallBackoffMs`, `stallLimit`, `progressEvery`, optional `maxItems` — see [Ops Conventions](../../concepts/10-ops-conventions/)              |
 
 The config is validated with zod: rules must reference declared categories, duplicate category/domain/sender entries are rejected, and every regex source must compile — a bad pattern fails at load time with a pointed error, never as a raw `SyntaxError` mid-run.
 
+## Build your config from your inbox
+
+You do not have to write rules from scratch — the suggest engine drafts a first config from what is actually in **your** inbox. It scans read-only, skips domains your config already covers, and matches the rest against a built-in catalog of about 200 globally recognizable root domains grouped into 12 generic categories (Finance, Shopping, Travel, Development, Social, Jobs, News, Entertainment, Health, Telecom, Cloud, Accounts). Domains not in the catalog come back as **unknown**, sorted by volume, for you to decide on — the catalog never guesses.
+
+Three ways to run it:
+
+- **CLI:** `fast-classifier suggest` prints the suggestions plus a paste-ready config fragment — see the [CLI reference](../cli/).
+- **MCP:** the [`suggest_rules` tool](../mcp-server/) returns the same result as `structuredContent` with a `configFragment` string, so an agent can build your config for you.
+- **Library:** `suggestRules(analyzeReport.domains, compiled)` and `toConfigFragment(result, accepted)` from `fast-classifier`.
+
+The fragment includes any category definitions you are missing, in `defineConfig` style — paste it into your config, run `plan` to check coverage, then write rules for the unknown domains the report surfaced. Iterate until coverage is where you want it.
+
+## Needs-action language packs
+
+The needs-action scorer ships two built-in keyword packs: `en` (the default) and `de`. High-signal phrases ("action required", "deadline" / "Frist", "Mahnung") score +3; receipt/shipping/newsletter exclusions score −2.
+
+```ts
+needsAction: { languages: ['en', 'de'] }  // opt into the German pack alongside English
+```
+
+Explicit `highKeywords` / `exclusionKeywords` arrays **replace** the enabled packs entirely — packs and custom lists never merge, so what you write is exactly what scores.
+
+## The brand-name pattern
+
+`detection.brandNamePattern` feeds the [human-sender detector](../../concepts/08-human-sender-detector/): a sender whose address or display name contains a brand token is never treated as a human awaiting your reply. The built-in default covers global household names only (uber, amazon, paypal, github, …) so it holds for any user. Add your regional or niche brands by overriding it:
+
+```ts
+detection: {
+  brandNamePattern: 'uber|amazon|paypal|github|my-regional-bank|my-local-delivery',
+}
+```
+
+[`examples/fast-classifier.config.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/examples/fast-classifier.config.ts) carries the origin session's full 55-token list as exactly this kind of override.
+
 ## Examples
 
-See [`examples/`](https://github.com/ahmadatallah/fast-classifier/tree/main/examples) in the repo for the full German-power-user config that reached 87% coverage (14 categories, 81 domain rules), its JSON twin, and minimal sweep-only / needs-action-only / MCP-transport variants.
+See [`examples/`](https://github.com/ahmadatallah/fast-classifier/tree/main/examples) in the repo for a full real-world config — the German-power-user setup that reached 87% coverage (14 categories, 81 domain rules, the bilingual `languages: ['en', 'de']` packs, and the full brand-pattern override) — plus its JSON twin and minimal sweep-only / needs-action-only / MCP-transport variants.

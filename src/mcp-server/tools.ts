@@ -17,6 +17,7 @@ import type { VerifyExpectations } from '../pipeline/index.js'
 import type { MailProvider } from '../provider/types.js'
 import { allowAll } from '../safety/confirm.js'
 import { redactDeep, redactError } from '../safety/redact.js'
+import { suggestRules, toConfigFragment } from '../suggest/index.js'
 
 export interface ServerDeps {
   provider: MailProvider
@@ -122,6 +123,27 @@ export const registerTools = (server: McpServer, deps: ServerDeps): void => {
     },
     async ({ max }) =>
       run(async () => toolResult(await planClassification(makeContext(deps, true, max)))),
+  )
+
+  server.registerTool(
+    'suggest_rules',
+    {
+      title: 'Suggest rules from the inbox',
+      description:
+        'Read-only: scan the inbox and match uncovered root domains against the built-in generic domain catalog. Returns catalog-backed rule suggestions, the top unknown domains for the user to decide on, and a paste-ready config fragment.',
+      inputSchema: { max: maxParam },
+      annotations: READ_ONLY,
+    },
+    async ({ max }) =>
+      run(async () => {
+        const report = await analyzeInbox(makeContext(deps, true, max))
+        const result = suggestRules(report.domains, deps.compiled)
+        const configFragment = toConfigFragment(
+          result,
+          result.suggestions.map(({ domain, category }) => ({ domain, category })),
+        )
+        return toolResult({ ...result, scanned: report.scanned, configFragment })
+      }),
   )
 
   server.registerTool(

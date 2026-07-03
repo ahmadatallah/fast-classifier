@@ -40,14 +40,16 @@ export FASTMAIL_API_TOKEN=...   # JMAP transport (the default)
 export FASTMAIL_MCP_TOKEN=...   # MCP transport (-p mcp)
 ```
 
-**The canonical loop** — recon, iterate rules, then execute:
+**The canonical loop** — recon, build **your** rules from **your** inbox, then execute:
 
 ```sh
 fast-classifier init                # writes a starter fast-classifier.config.ts
 fast-classifier analyze             # read-only recon: top senders and root domains
+fast-classifier suggest             # match your top domains against the built-in catalog:
+                                    # rule suggestions + unknown domains + paste-ready fragment
+# paste the accepted suggestions into fast-classifier.config.ts
 fast-classifier plan                # coverage % + top unmatched senders
-# edit fast-classifier.config.ts — add rules for the top unmatched senders
-fast-classifier plan                # iterate until coverage is where you want it
+# add rules for the unmatched senders and unknown domains, re-run plan — iterate
 fast-classifier sweep               # dry run — inspect the report
 fast-classifier sweep --execute     # label + archive bulk mail
 fast-classifier file --execute      # file everything the rules match
@@ -144,7 +146,9 @@ export default defineConfig({
 
 Discovery order: explicit `--config <path>` → `fast-classifier.config.ts` → `.mjs` → `.js` → `.json` in the working directory → built-in defaults. JSON configs work identically (rule patterns are plain strings in every format, so nothing is lost). Config files must never contain credentials — the loader rejects secret-shaped keys and token-shaped values.
 
-See [`examples/`](examples/) for the full German-power-user config that reached 87% coverage, its JSON twin, and minimal variants.
+**Build your config from your inbox.** `fast-classifier suggest` (or the `suggest_rules` MCP tool, or `suggestRules`/`toConfigFragment` from the library) scans your inbox read-only, matches uncovered root domains against a built-in catalog of well-known senders in 12 generic categories, and prints a paste-ready config fragment — anything not in the catalog is listed as unknown for you to decide. The defaults stay generic on purpose: the needs-action scorer's keyword packs are English-only unless you opt in with `needsAction: { languages: ['en', 'de'] }` (explicit `highKeywords`/`exclusionKeywords` replace the packs), and `detection.brandNamePattern` defaults to global household names — override it with your regional brands.
+
+See [`examples/`](examples/) for a full real-world config — the German-power-user setup that reached 87% coverage, with the bilingual packs and the full brand-pattern override — plus its JSON twin and minimal variants.
 
 ## MCP server mode
 
@@ -156,7 +160,7 @@ claude mcp add fast-classifier \
   -- fast-classifier-mcp
 ```
 
-Tools (10): `classify_sender`, `analyze_inbox`, `plan_classification`, `sweep_newsletters`, `file_inbox`, `score_needs_action`, `list_labels`, `ensure_labels`, `verify_run`, `get_effective_config`.
+Tools (11): `classify_sender`, `analyze_inbox`, `plan_classification`, `suggest_rules`, `sweep_newsletters`, `file_inbox`, `score_needs_action`, `list_labels`, `ensure_labels`, `verify_run`, `get_effective_config`.
 
 Mutating tools default to `dryRun: true` — the intended agent loop is call dry, inspect the report, then pass `dryRun: false`. Unless the server was started with `--allow-execute` (or `FAST_CLASSIFIER_ALLOW_WRITES=1`), `dryRun` is forced true regardless of arguments and results carry `forcedDryRun: true`, so agents can tell the difference between "planned" and "cannot execute". Human-facing output goes to stderr; stdout carries the protocol.
 
@@ -184,13 +188,14 @@ Commands:
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `analyze`                                                                    | read-only recon: who fills the inbox, by sender and root domain                                                                                                                  |
 | `plan`                                                                       | classify without touching anything: coverage + unmatched senders                                                                                                                 |
+| `suggest [dir] [--interactive] [--no-interactive] [--write]`                 | read-only scan: suggest config rules for your senders from the built-in domain catalog, plus a paste-ready config fragment                                                       |
 | `sweep`                                                                      | label + archive bulk mail (keep-list wins; dry-run by default); audits to `sweep.log.tsv`                                                                                        |
 | `file`                                                                       | file classified mail into per-category labels (dry-run by default); audits to `file.log.tsv`                                                                                     |
 | `needs-action [--apply]`                                                     | score the recent window for mail needing a human response; `--apply` tags candidates with the needs-action label (never archives) — tagging requires `--apply` _and_ `--execute` |
 | `labels list`                                                                | list labels with email totals                                                                                                                                                    |
 | `labels ensure <names...>`                                                   | create the given labels if missing, nested as `'Parent/Child'` (dry-run by default)                                                                                              |
 | `verify [--contains <addrs...>] [--cleared <addrs...>] [--label <specs...>]` | post-run assertions; label specs are `'Name'` (exists), `'Name=N'` (exactly N), `'Name>=N'` (at least N)                                                                         |
-| `init [dir]`                                                                 | write a starter `fast-classifier.config.ts` (refuses to overwrite)                                                                                                               |
+| `init [dir] [--from-inbox]`                                                  | write a starter `fast-classifier.config.ts` (refuses to overwrite); `--from-inbox` builds it from your inbox's suggestions instead                                               |
 | `mcp`                                                                        | run the MCP server on stdio — prefer the standalone `fast-classifier-mcp` bin                                                                                                    |
 
 Every command writes `<command>-report.json` (credentials redacted) into the report dir and echoes the path on stderr. Exit code 1 on errors, on failed `verify` checks, and when a `sweep`/`file` run is aborted by a declined confirmation.

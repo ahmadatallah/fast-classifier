@@ -25,12 +25,41 @@ describe('scoreNeedsAction', () => {
     expect(r.needsAction).toBe(true)
   })
 
-  test('German high keywords score too', () => {
-    const r = scoreNeedsAction(email({ subject: 'Bitte Termin bestätigen' }), compiled)
+  test('German keywords do NOT score with the default (English-only) config', () => {
+    const r = scoreNeedsAction(
+      email({ subject: 'Bitte Termin bestätigen — Frist läuft ab' }),
+      compiled,
+    )
+    expect(r.score).toBe(0)
+    expect(r.needsAction).toBe(false)
+  })
+
+  test("German high keywords score once languages includes 'de'", () => {
+    const bilingual = compileConfig(
+      classifierConfigSchema.parse({ needsAction: { languages: ['en', 'de'] } }),
+    )
+    const r = scoreNeedsAction(email({ subject: 'Bitte Termin bestätigen' }), bilingual)
     expect(r.score).toBe(6) // 'termin' + 'bestätige' (substring of bestätigen)
     expect(r.signals).toContain('termin')
     expect(r.signals).toContain('bestätige')
     expect(r.needsAction).toBe(true)
+    // English keywords still score alongside
+    const en = scoreNeedsAction(email({ subject: 'Deadline approaching' }), bilingual)
+    expect(en.signals).toContain('deadline')
+  })
+
+  test('explicit highKeywords REPLACE the language packs entirely', () => {
+    const custom = compileConfig(
+      classifierConfigSchema.parse({
+        needsAction: { highKeywords: [{ phrase: 'urgent widget', weight: 3 }] },
+      }),
+    )
+    // a pack phrase no longer scores...
+    expect(scoreNeedsAction(email({ subject: 'Deadline today' }), custom).score).toBe(0)
+    // ...the explicit phrase does, and pack exclusions still apply (not overridden)
+    const hit = scoreNeedsAction(email({ subject: 'Urgent widget receipt' }), custom)
+    expect(hit.score).toBe(1) // +3 'urgent widget', -2 'receipt'
+    expect(hit.signals).toEqual(['urgent widget'])
   })
 
   test('exclusion keywords subtract', () => {

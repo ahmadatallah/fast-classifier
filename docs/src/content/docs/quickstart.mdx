@@ -40,7 +40,7 @@ export FASTMAIL_MCP_TOKEN=...   # MCP transport (-p mcp)
 
 ## The canonical loop
 
-Recon, iterate rules, then execute:
+Recon, build **your** rules from **your** inbox, then execute:
 
 <Steps>
 
@@ -56,34 +56,42 @@ Recon, iterate rules, then execute:
    fast-classifier analyze             # top senders and root domains
    ```
 
-3. Check coverage:
+3. Build your rules from your inbox:
+
+   ```sh
+   fast-classifier suggest             # catalog-backed rule suggestions + unknown domains
+   ```
+
+   `suggest` matches your top domains against a built-in catalog of well-known senders in 12 generic categories and prints a paste-ready config fragment; domains it does not recognize are listed for you to decide. Paste what you accept into `fast-classifier.config.ts`.
+
+4. Check coverage:
 
    ```sh
    fast-classifier plan                # coverage % + top unmatched senders
    ```
 
-4. Edit `fast-classifier.config.ts` — add rules for the top unmatched senders — then run `plan` again. Iterate until coverage is where you want it. This flywheel is how the origin session reached 87% coverage without training anything.
+5. Edit `fast-classifier.config.ts` — add rules for the top unmatched senders and the unknown domains `suggest` surfaced — then run `plan` again. Iterate until coverage is where you want it. This flywheel is how the origin session reached 87% coverage without training anything.
 
-5. Sweep bulk mail — dry run first, inspect the report, then execute:
+6. Sweep bulk mail — dry run first, inspect the report, then execute:
 
    ```sh
    fast-classifier sweep               # dry run — inspect the report
    fast-classifier sweep --execute     # label + archive bulk mail
    ```
 
-6. File everything the rules match:
+7. File everything the rules match:
 
    ```sh
    fast-classifier file --execute
    ```
 
-7. Surface what needs a human reply:
+8. Surface what needs a human reply:
 
    ```sh
    fast-classifier needs-action
    ```
 
-8. Prove the run did what the plan said:
+9. Prove the run did what the plan said:
 
    ```sh
    fast-classifier verify --cleared newsletter@example.com --label 'Inbox/Dev>=1'
@@ -93,6 +101,7 @@ Recon, iterate rules, then execute:
 
 ## Next steps
 
-- [Configuration](../guides/configuration/) — categories, rules, keep-list, and the config discovery order.
+- [Configuration](../guides/configuration/) — categories, rules, keep-list, and building your config from your inbox.
 - [CLI reference](../guides/cli/) — every command and flag.
 - [MCP server](../guides/mcp-server/) — drive the same pipelines from an agent.
+- See [`examples/`](https://github.com/ahmadatallah/fast-classifier/tree/main/examples) for a full real-world config.
