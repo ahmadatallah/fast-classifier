@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { InvalidArgumentError, type Command } from 'commander'
-import { TsvAudit, writeReport } from '../audit/index.js'
+import { openTsvAudit, writeReport } from '../audit/index.js'
 import { compileConfig } from '../config/compile.js'
 import { loadConfig } from '../config/load.js'
 import type { LabelExpectation, PipelineContext, VerifyExpectations } from '../pipeline/index.js'
@@ -51,7 +51,7 @@ interface GlobalOpts {
 
 export const DRY_RUN_BANNER = 'DRY RUN — no changes will be made (pass --execute to apply)'
 
-function parsePositiveInt(value: string): number {
+const parsePositiveInt = (value: string): number => {
   const n = Number(value)
   if (!Number.isInteger(n) || n <= 0) throw new InvalidArgumentError('expected a positive integer')
   return n
@@ -63,7 +63,7 @@ function parsePositiveInt(value: string): number {
  * parse. Defaults exist only at the program level — a subcommand default would
  * shadow an explicitly-set program value in optsWithGlobals().
  */
-export function addGlobalOptions(cmd: Command, withDefaults: boolean): Command {
+export const addGlobalOptions = (cmd: Command, withDefaults: boolean): Command => {
   cmd
     .option('-c, --config <path>', 'path to fast-classifier.config.{ts,mjs,js,json}')
     .option('-p, --provider <type>', "mail transport: 'jmap' or 'mcp' (default: from config)")
@@ -79,16 +79,16 @@ export function addGlobalOptions(cmd: Command, withDefaults: boolean): Command {
   return cmd
 }
 
-function exitWith(deps: CliDeps, code: number): void {
+const exitWith = (deps: CliDeps, code: number): void => {
   if (deps.setExitCode) deps.setExitCode(code)
   else process.exitCode = code
 }
 
 /** Expected failures (missing token, bad config…) print one line, never a stack. */
-function wrap<A extends unknown[]>(
+const wrap = <A extends unknown[]>(
   deps: CliDeps,
   fn: (...args: A) => Promise<void>,
-): (...args: A) => Promise<void> {
+): ((...args: A) => Promise<void>) => {
   return async (...args: A) => {
     try {
       await fn(...args)
@@ -104,11 +104,11 @@ interface CommandRuntime {
   opts: GlobalOpts
 }
 
-async function createContext(
+const createContext = async (
   cmd: Command,
   deps: CliDeps,
   mutating: boolean,
-): Promise<CommandRuntime> {
+): Promise<CommandRuntime> => {
   const opts = cmd.optsWithGlobals() as GlobalOpts
   const { config } = await loadConfig(opts.config)
   const provider = deps.providerFactory(opts.provider ?? config.provider.type, config, deps.env)
@@ -128,26 +128,26 @@ async function createContext(
   return { ctx, opts }
 }
 
-async function emit(
+const emit = async (
   deps: CliDeps,
   opts: GlobalOpts,
   name: string,
   report: unknown,
   human: string,
-): Promise<void> {
+): Promise<void> => {
   const path = await writeReport(opts.reportDir, name, report)
   if (opts.json === true) deps.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
   else deps.stdout.write(human)
   deps.stderr.write(`report: ${path}\n`)
 }
 
-function abortedByConfirm(deps: CliDeps, command: string): void {
+const abortedByConfirm = (deps: CliDeps, command: string): void => {
   deps.stderr.write(`${command} aborted: confirmation declined (pass --yes to approve)\n`)
   exitWith(deps, 1)
 }
 
 /** `Name` = exists, `Name=N` = exactly N emails, `Name>=N` = at least N. */
-export function parseLabelExpectation(spec: string): LabelExpectation {
+export const parseLabelExpectation = (spec: string): LabelExpectation => {
   const m = /^(.*?)(>=|=)(\d+)$/.exec(spec)
   const name = m?.[1] ?? ''
   if (m && name !== '') {
@@ -206,7 +206,7 @@ Next steps:
      Mutating commands are dry-run until you pass --execute.
 `
 
-export function registerCommands(program: Command, deps: CliDeps): void {
+export const registerCommands = (program: Command, deps: CliDeps): void => {
   const sub = (parent: Command, name: string, description: string): Command =>
     addGlobalOptions(parent.command(name).description(description), false)
 
@@ -229,7 +229,7 @@ export function registerCommands(program: Command, deps: CliDeps): void {
   sub(program, 'sweep', 'label + archive bulk mail (keep-list wins; dry-run by default)').action(
     wrap(deps, async (_opts: unknown, cmd: Command) => {
       const { ctx, opts } = await createContext(cmd, deps, true)
-      const audit = await TsvAudit.open(join(opts.reportDir, 'sweep.log.tsv'))
+      const audit = await openTsvAudit(join(opts.reportDir, 'sweep.log.tsv'))
       const report = await sweepNewsletters(ctx, { audit })
       await emit(deps, opts, 'sweep', report, formatSweep(report))
       if (report.skippedByConfirm) abortedByConfirm(deps, 'sweep')
@@ -239,7 +239,7 @@ export function registerCommands(program: Command, deps: CliDeps): void {
   sub(program, 'file', 'file classified mail into per-category labels (dry-run by default)').action(
     wrap(deps, async (_opts: unknown, cmd: Command) => {
       const { ctx, opts } = await createContext(cmd, deps, true)
-      const audit = await TsvAudit.open(join(opts.reportDir, 'file.log.tsv'))
+      const audit = await openTsvAudit(join(opts.reportDir, 'file.log.tsv'))
       const report = await fileInbox(ctx, { audit })
       await emit(deps, opts, 'file', report, formatFile(report))
       if (report.skippedByConfirm) abortedByConfirm(deps, 'file')

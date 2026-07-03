@@ -1,18 +1,18 @@
 import { describe, expect, test } from 'bun:test'
 import { executeActions, sweepNewsletters } from '../../src/pipeline/index.js'
 import type { PlannedAction } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import { denyAll } from '../../src/safety/confirm.js'
 import type { EmailMeta } from '../../src/types.js'
 import { inboxIds, makeCtx, recordingProvider } from './helpers.js'
 
-function emailsAndActions(
+const emailsAndActions = (
   count: number,
   label = 'Bulk',
 ): {
   emails: EmailMeta[]
   actions: PlannedAction[]
-} {
+} => {
   const emails = Array.from({ length: count }, (_, i) =>
     makeEmail({ id: `e${i}`, from: { name: 'S', email: 'sender@example.com' } }),
   )
@@ -29,7 +29,7 @@ function emailsAndActions(
 describe('executeActions confirmation gate', () => {
   test('denyAll above the default threshold skips without a single mutating call', async () => {
     const { emails, actions } = emailsAndActions(101)
-    const inner = new MemoryMailProvider(emails)
+    const inner = createMemoryMailProvider(emails)
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider, { confirm: denyAll })
 
@@ -42,7 +42,7 @@ describe('executeActions confirmation gate', () => {
 
   test('exactly at the threshold no confirmation is needed — denyAll still proceeds', async () => {
     const { emails, actions } = emailsAndActions(5)
-    const provider = new MemoryMailProvider(emails)
+    const provider = createMemoryMailProvider(emails)
     let confirmCalls = 0
     const { ctx } = makeCtx(provider, {
       confirmThreshold: 5,
@@ -61,7 +61,7 @@ describe('executeActions confirmation gate', () => {
 
   test('one above a custom threshold triggers the gate', async () => {
     const { emails, actions } = emailsAndActions(6)
-    const provider = new MemoryMailProvider(emails)
+    const provider = createMemoryMailProvider(emails)
     const { ctx } = makeCtx(provider, { confirmThreshold: 5, confirm: denyAll })
 
     const result = await executeActions(ctx, 'test', actions)
@@ -79,7 +79,7 @@ describe('executeActions confirmation gate', () => {
       archive: true,
       reason: 'test',
     }))
-    const provider = new MemoryMailProvider(emails)
+    const provider = createMemoryMailProvider(emails)
     const summaries: string[] = []
     const { ctx } = makeCtx(provider, {
       confirm: (summary) => {
@@ -108,7 +108,7 @@ describe('executeActions confirmation gate', () => {
         snippet: 'unsubscribe',
       }),
     )
-    const inner = new MemoryMailProvider(emails)
+    const inner = createMemoryMailProvider(emails)
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider, { confirm: denyAll, confirmThreshold: 2 })
 

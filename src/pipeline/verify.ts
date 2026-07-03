@@ -31,10 +31,10 @@ export interface VerifyReport {
  * only), so it runs against the raw provider and behaves identically in
  * dry-run mode.
  */
-export async function verifyRun(
+export const verifyRun = async (
   ctx: PipelineContext,
   expectations: VerifyExpectations,
-): Promise<VerifyReport> {
+): Promise<VerifyReport> => {
   return withMeta('verify', ctx, async () => {
     const provider = ctx.provider
     const checks: VerifyCheck[] = []

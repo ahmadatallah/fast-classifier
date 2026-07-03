@@ -28,6 +28,11 @@ bun test
 
 Style is enforced, not debated: prettier (no semicolons, single quotes, print width 100), strict TypeScript (`exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`), ESM NodeNext (relative imports need the `.js` extension). Comments only for non-obvious constraints. An eslint boundary rule keeps core code (`src/` outside `cli/` and `mcp-server/`) from importing either shell.
 
+Two more rules eslint enforces (`func-style`, `no-restricted-syntax`):
+
+- **Arrow-const functions only** — `export const foo = (a: A): R => { ... }`, never `function` declarations.
+- **Factories over classes** — stateful components are closures returning an interface (`createMcpHttpClient(opts): McpHttpClient`, `openTsvAudit(path)`), never classes. The one exception: `Error` subtypes (`RateLimitError`, `NeverDeleteViolation`, …) stay classes because JavaScript requires it.
+
 ## Test conventions
 
 - `bun:test`, files under `test/` mirroring `src/` (`src/classify/rules.ts` → `test/classify/rules.test.ts`).

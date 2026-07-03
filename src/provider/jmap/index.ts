@@ -1,5 +1,5 @@
-export { JmapClient, throwIfRateLimited } from './client.js'
-export type { JmapClientOptions, JmapMethodCall, JmapMethodResponse } from './client.js'
+export { createJmapClient, throwIfRateLimited } from './client.js'
+export type { JmapClient, JmapClientOptions, JmapMethodCall, JmapMethodResponse } from './client.js'
 export { buildEmailFilter } from './query.js'
-export { JmapMailProvider } from './provider.js'
+export { createJmapMailProvider } from './provider.js'
 export type { JmapProviderOptions } from './provider.js'

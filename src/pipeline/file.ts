@@ -29,7 +29,10 @@ export interface FileReport {
 }
 
 /** File classified mail out of the inbox: label per category, then archive. */
-export async function fileInbox(ctx: PipelineContext, opts: FileOptions = {}): Promise<FileReport> {
+export const fileInbox = async (
+  ctx: PipelineContext,
+  opts: FileOptions = {},
+): Promise<FileReport> => {
   return withMeta('file', ctx, async () => {
     const only = opts.categories === undefined ? null : new Set(opts.categories)
     let scanned = 0

@@ -29,10 +29,10 @@ export interface SweepReport {
 }
 
 /** Bulk-mail sweep: full-text heuristic in, keep-list out, label + archive. */
-export async function sweepNewsletters(
+export const sweepNewsletters = async (
   ctx: PipelineContext,
   opts: SweepOptions = {},
-): Promise<SweepReport> {
+): Promise<SweepReport> => {
   return withMeta('sweep', ctx, async () => {
     const { config, compiled } = ctx
     if (config.keepList.length === 0) {

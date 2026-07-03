@@ -1,5 +1,9 @@
 import type { SearchQuery } from '../../types.js'
 
+const quote = (value: string): string => {
+  return /\s/.test(value) ? `"${value.replaceAll('"', '')}"` : value
+}
+
 /**
  * Compile a SearchQuery to Fastmail's Gmail-style search DSL.
  *
@@ -17,7 +21,7 @@ import type { SearchQuery } from '../../types.js'
  * Parts are space-joined in stable order: in, text, from, notFrom…, after,
  * is:unread.
  */
-export function buildSearchString(query: SearchQuery): string {
+export const buildSearchString = (query: SearchQuery): string => {
   const parts: string[] = []
   if (query.inMailbox) parts.push(`in:${quote(query.inMailbox)}`)
   if (query.text) parts.push(query.text)
@@ -26,8 +30,4 @@ export function buildSearchString(query: SearchQuery): string {
   if (query.after) parts.push(`after:${query.after}`)
   if (query.unreadOnly) parts.push('is:unread')
   return parts.join(' ')
-}
-
-function quote(value: string): string {
-  return /\s/.test(value) ? `"${value.replaceAll('"', '')}"` : value
 }

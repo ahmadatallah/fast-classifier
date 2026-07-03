@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { CliDeps } from '../../src/cli/main.js'
 import { buildProgram } from '../../src/cli/main.js'
 import type { ProviderFactory } from '../../src/cli/provider-factory.js'
-import { MemoryMailProvider } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, type MemoryMailProvider } from '../../src/provider/memory.js'
 import type { EmailMeta } from '../../src/types.js'
 
 export interface Harness {
@@ -29,16 +29,16 @@ export const TEST_ENV = {
   FASTMAIL_MCP_TOKEN: 'test-mcp-token',
 }
 
-export async function makeHarness(
+export const makeHarness = async (
   emails: EmailMeta[],
   options: HarnessOptions = {},
-): Promise<Harness> {
+): Promise<Harness> => {
   const tmpDir = await mkdtemp(join(tmpdir(), 'fc-cli-'))
   const reportDir = join(tmpDir, 'reports')
   const configPath = join(tmpDir, 'fast-classifier.config.json')
   await writeFile(configPath, JSON.stringify(options.config ?? {}))
 
-  const provider = new MemoryMailProvider(emails)
+  const provider = createMemoryMailProvider(emails)
   const stdout: string[] = []
   const stderr: string[] = []
   const exitCodes: number[] = []
@@ -66,10 +66,10 @@ export async function makeHarness(
   }
 }
 
-export async function inboxLabels(
+export const inboxLabels = async (
   provider: MemoryMailProvider,
   id: string,
-): Promise<readonly string[]> {
+): Promise<readonly string[]> => {
   const email = await provider.getEmail(id)
   return email.labels
 }

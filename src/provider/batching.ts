@@ -15,11 +15,11 @@ export interface BatchOptions {
 const realSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** The shared write loop: chunk, pace, retry rate limits, report progress. */
-export async function batchExecute<T>(
+export const batchExecute = async <T>(
   items: readonly T[],
   fn: (chunk: T[]) => Promise<void>,
   opts: BatchOptions = {},
-): Promise<{ processed: number; chunks: number }> {
+): Promise<{ processed: number; chunks: number }> => {
   const batchSize = opts.batchSize ?? 50
   const delayMs = opts.delayMs ?? 220
   const retries = opts.retries ?? 3

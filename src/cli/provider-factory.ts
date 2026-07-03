@@ -1,7 +1,7 @@
 import { tokenFromEnv } from '../config/load.js'
 import type { ClassifierConfig } from '../config/schema.js'
-import { JmapMailProvider } from '../provider/jmap/index.js'
-import { McpMailProvider } from '../provider/mcp/index.js'
+import { createJmapMailProvider } from '../provider/jmap/index.js'
+import { createMcpMailProvider } from '../provider/mcp/index.js'
 import type { MailProvider } from '../provider/types.js'
 
 /** Injectable so tests drive the CLI with a MemoryMailProvider. */
@@ -15,12 +15,12 @@ export const defaultProviderFactory: ProviderFactory = (type, config, env) => {
   const baseUrl = config.provider.baseUrl
   switch (type) {
     case 'jmap':
-      return new JmapMailProvider({
+      return createJmapMailProvider({
         token: tokenFromEnv('jmap', env),
         ...(baseUrl ? { sessionUrl: `${baseUrl}/jmap/session` } : {}),
       })
     case 'mcp':
-      return new McpMailProvider({
+      return createMcpMailProvider({
         token: tokenFromEnv('mcp', env),
         ...(baseUrl ? { endpoint: baseUrl } : {}),
       })

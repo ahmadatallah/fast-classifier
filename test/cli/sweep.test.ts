@@ -5,7 +5,7 @@ import { makeEmail } from '../../src/provider/memory.js'
 import type { EmailMeta } from '../../src/types.js'
 import { inboxLabels, makeHarness } from './helpers.js'
 
-function newsletterInbox(): EmailMeta[] {
+const newsletterInbox = (): EmailMeta[] => {
   return [
     makeEmail({
       id: 'n1',

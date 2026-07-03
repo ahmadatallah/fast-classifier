@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { verifyRun } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import type { MemoryMailProvider } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import { expectMeta, makeCtx } from './helpers.js'
 
-function verifiedMailbox(): MemoryMailProvider {
-  return new MemoryMailProvider([
+const verifiedMailbox = (): MemoryMailProvider => {
+  return createMemoryMailProvider([
     makeEmail({ id: 'v1', from: { name: 'Alice', email: 'alice@example.com' } }),
     // bob was swept: labeled and archived
     makeEmail({

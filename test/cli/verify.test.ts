@@ -6,7 +6,7 @@ import { makeEmail } from '../../src/provider/memory.js'
 import type { EmailMeta } from '../../src/types.js'
 import { makeHarness } from './helpers.js'
 
-function verifiableInbox(): EmailMeta[] {
+const verifiableInbox = (): EmailMeta[] => {
   return [
     makeEmail({
       id: 'v1',

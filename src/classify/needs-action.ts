@@ -12,7 +12,7 @@ export interface NeedsActionScore {
  * Phrases in compiled are pre-lowercased; trailing spaces in phrases are
  * significant.
  */
-export function scoreNeedsAction(email: EmailMeta, compiled: CompiledRules): NeedsActionScore {
+export const scoreNeedsAction = (email: EmailMeta, compiled: CompiledRules): NeedsActionScore => {
   const na = compiled.needsAction
   const haystack = (
     email.subject +

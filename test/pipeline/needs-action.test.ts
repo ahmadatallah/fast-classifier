@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { scoreInboxNeedsAction } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import type { EmailMeta } from '../../src/types.js'
 import { expectMeta, inboxIds, makeCtx, recordingProvider } from './helpers.js'
 
 const NOW = new Date('2026-03-01T00:00:00Z')
 
-function needsActionInbox(): EmailMeta[] {
+const needsActionInbox = (): EmailMeta[] => {
   return [
     // 'action required' +3, 'verify your' +3, unread +1 = 7
     makeEmail({
@@ -49,7 +49,7 @@ function needsActionInbox(): EmailMeta[] {
 
 describe('scoreInboxNeedsAction', () => {
   test('window filtering, scoring, and sort order (score desc, then receivedAt desc)', async () => {
-    const provider = new MemoryMailProvider(needsActionInbox())
+    const provider = createMemoryMailProvider(needsActionInbox())
     const { ctx } = makeCtx(provider)
 
     const report = await scoreInboxNeedsAction(ctx, { now: NOW })
@@ -68,7 +68,7 @@ describe('scoreInboxNeedsAction', () => {
   })
 
   test('apply tags candidates without archiving them', async () => {
-    const provider = new MemoryMailProvider(needsActionInbox())
+    const provider = createMemoryMailProvider(needsActionInbox())
     const { ctx } = makeCtx(provider)
 
     const report = await scoreInboxNeedsAction(ctx, { apply: true, now: NOW })
@@ -85,7 +85,7 @@ describe('scoreInboxNeedsAction', () => {
   })
 
   test('apply in dry-run tags nothing and never calls a mutator', async () => {
-    const inner = new MemoryMailProvider(needsActionInbox())
+    const inner = createMemoryMailProvider(needsActionInbox())
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider, { dryRun: true })
 
@@ -99,7 +99,7 @@ describe('scoreInboxNeedsAction', () => {
   })
 
   test('windowDays config moves the after cutoff', async () => {
-    const provider = new MemoryMailProvider(needsActionInbox())
+    const provider = createMemoryMailProvider(needsActionInbox())
     const { ctx } = makeCtx(provider, { config: { needsAction: { windowDays: 365 } } })
 
     const report = await scoreInboxNeedsAction(ctx, { now: NOW })

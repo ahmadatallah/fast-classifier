@@ -14,7 +14,7 @@ export interface RunReportMeta {
  * creating the directory if needed. Overwrites a previous report of the same
  * name. Returns the absolute path.
  */
-export async function writeReport(dir: string, name: string, data: unknown): Promise<string> {
+export const writeReport = async (dir: string, name: string, data: unknown): Promise<string> => {
   const absDir = resolve(dir)
   await mkdir(absDir, { recursive: true })
   const path = join(absDir, `${name}-report.json`)

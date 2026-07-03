@@ -1,13 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import type { MemoryMailProvider } from '../../src/provider/memory.js'
 import type { SearchQuery } from '../../src/types.js'
 
-async function searchIds(
+const searchIds = async (
   provider: MemoryMailProvider,
   query: SearchQuery,
   position = 0,
   limit = 100,
-): Promise<string[]> {
+): Promise<string[]> => {
   const page = await provider.searchEmails(query, { position, limit })
   return page.items.map((e) => e.id)
 }
@@ -59,34 +60,34 @@ describe('MemoryMailProvider search filters', () => {
   ]
 
   test("inMailbox 'inbox' matches the Inbox label", async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { inMailbox: 'inbox' })).toEqual(['a', 'b'])
   })
 
   test('inMailbox with any other value matches that label name', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { inMailbox: 'Promotion' })).toEqual(['c'])
   })
 
   test('text matches subject and snippet, case-insensitively', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { text: 'unsubscribe' })).toEqual(['a', 'b'])
     expect(await searchIds(provider, { text: 'INVOICE' })).toEqual(['c'])
   })
 
   test('from is an exact address match', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { from: 'news@shop.com' })).toEqual(['a', 'c'])
     expect(await searchIds(provider, { from: 'shop.com' })).toEqual([])
   })
 
   test('notFrom excludes those addresses', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { notFrom: ['news@shop.com'] })).toEqual(['b'])
   })
 
   test("notFrom behaves the same under caps.serverSideNotFrom 'address-only'", async () => {
-    const provider = new MemoryMailProvider(corpus(), {
+    const provider = createMemoryMailProvider(corpus(), {
       caps: { serverSideNotFrom: 'address-only' },
     })
     expect(provider.caps.serverSideNotFrom).toBe('address-only')
@@ -94,18 +95,18 @@ describe('MemoryMailProvider search filters', () => {
   })
 
   test('after keeps receivedAt >= after (boundary inclusive)', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { after: '2026-01-01' })).toEqual(['a', 'c'])
     expect(await searchIds(provider, { after: '2025-12-01' })).toEqual(['a', 'b', 'c'])
   })
 
   test('unreadOnly drops read emails', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { unreadOnly: true })).toEqual(['a', 'c'])
   })
 
   test('filters combine (AND)', async () => {
-    const provider = new MemoryMailProvider(corpus())
+    const provider = createMemoryMailProvider(corpus())
     expect(await searchIds(provider, { inMailbox: 'inbox', text: 'unsubscribe' })).toEqual([
       'a',
       'b',
@@ -121,7 +122,7 @@ describe('MemoryMailProvider search filters', () => {
 
   test('slices [position, position+limit] of the current filtered list', async () => {
     const emails = Array.from({ length: 7 }, (_, i) => makeEmail({ id: `e${i}` }))
-    const provider = new MemoryMailProvider(emails)
+    const provider = createMemoryMailProvider(emails)
     const page = await provider.searchEmails({ inMailbox: 'inbox' }, { position: 2, limit: 3 })
     expect(page.items.map((e) => e.id)).toEqual(['e2', 'e3', 'e4'])
     expect(page.position).toBe(2)
@@ -133,7 +134,7 @@ describe('MemoryMailProvider search filters', () => {
 
 describe('MemoryMailProvider mutations', () => {
   test('archive removes only the Inbox label and is visible to later searches', async () => {
-    const provider = new MemoryMailProvider([
+    const provider = createMemoryMailProvider([
       makeEmail({ id: 'a', labels: ['Inbox', 'Dev'] }),
       makeEmail({ id: 'b' }),
     ])
@@ -143,7 +144,7 @@ describe('MemoryMailProvider mutations', () => {
   })
 
   test('addLabels adds names and auto-creates unknown labels', async () => {
-    const provider = new MemoryMailProvider([makeEmail({ id: 'a' })])
+    const provider = createMemoryMailProvider([makeEmail({ id: 'a' })])
     await provider.addLabels(['a'], ['Promotion'])
     expect((await provider.getEmail('a')).labels).toEqual(['Inbox', 'Promotion'])
     // mutation visible in subsequent searches
@@ -153,21 +154,21 @@ describe('MemoryMailProvider mutations', () => {
   })
 
   test('addLabels is idempotent per label name', async () => {
-    const provider = new MemoryMailProvider([makeEmail({ id: 'a' })])
+    const provider = createMemoryMailProvider([makeEmail({ id: 'a' })])
     await provider.addLabels(['a'], ['Dev'])
     await provider.addLabels(['a'], ['Dev'])
     expect((await provider.getEmail('a')).labels).toEqual(['Inbox', 'Dev'])
   })
 
   test('addLabels throws on unknown email id', async () => {
-    const provider = new MemoryMailProvider([makeEmail({ id: 'a' })])
+    const provider = createMemoryMailProvider([makeEmail({ id: 'a' })])
     await expect(provider.addLabels(['nope'], ['Dev'])).rejects.toThrow('unknown email id')
   })
 })
 
 describe('MemoryMailProvider labels', () => {
   test('ensureLabels registers missing names and returns a Label per name', async () => {
-    const provider = new MemoryMailProvider([])
+    const provider = createMemoryMailProvider([])
     const map = await provider.ensureLabels(['Dev', 'Inbox/Travel'])
     expect(map.get('Dev')?.name).toBe('Dev')
     expect(map.get('Inbox/Travel')?.name).toBe('Travel')
@@ -178,7 +179,7 @@ describe('MemoryMailProvider labels', () => {
   })
 
   test('listLabels returns registered labels plus labels seen on emails, with totalEmails', async () => {
-    const provider = new MemoryMailProvider(
+    const provider = createMemoryMailProvider(
       [
         makeEmail({ id: 'a' }),
         makeEmail({ id: 'b', labels: ['Inbox', 'Dev'] }),
@@ -194,7 +195,7 @@ describe('MemoryMailProvider labels', () => {
   })
 
   test('caps defaults and overrides', () => {
-    const provider = new MemoryMailProvider([])
+    const provider = createMemoryMailProvider([])
     expect(provider.kind).toBe('memory')
     expect(provider.caps).toEqual({
       maxPageSize: 50,
@@ -202,7 +203,7 @@ describe('MemoryMailProvider labels', () => {
       autoCreatesLabels: true,
       canSetLabelColor: false,
     })
-    const tweaked = new MemoryMailProvider([], {
+    const tweaked = createMemoryMailProvider([], {
       caps: { maxPageSize: 10, serverSideNotFrom: 'address-only' },
     })
     expect(tweaked.caps.maxPageSize).toBe(10)
@@ -211,7 +212,7 @@ describe('MemoryMailProvider labels', () => {
   })
 
   test('getEmail returns known ids and throws on unknown', async () => {
-    const provider = new MemoryMailProvider([makeEmail({ id: 'a', subject: 'hey' })])
+    const provider = createMemoryMailProvider([makeEmail({ id: 'a', subject: 'hey' })])
     expect((await provider.getEmail('a')).subject).toBe('hey')
     await expect(provider.getEmail('zzz')).rejects.toThrow('unknown email id: zzz')
   })

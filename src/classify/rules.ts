@@ -16,7 +16,7 @@ export interface RuleMatch {
  * exact sender, root domain, relay-domain name rules, relay account/personal
  * fallbacks, then the user's own domains. null = leave in inbox.
  */
-export function classify(sender: SenderInfo, compiled: CompiledRules): RuleMatch | null {
+export const classify = (sender: SenderInfo, compiled: CompiledRules): RuleMatch | null => {
   const email = sender.email.toLowerCase()
   const name = sender.name
 

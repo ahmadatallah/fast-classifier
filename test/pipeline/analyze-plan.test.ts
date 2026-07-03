@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { analyzeInbox, planClassification } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import type { EmailMeta } from '../../src/types.js'
 import { expectMeta, makeCtx, recordingProvider } from './helpers.js'
 
-function reconInbox(): EmailMeta[] {
+const reconInbox = (): EmailMeta[] => {
   return [
     makeEmail({ id: 'r1', from: { name: '', email: 'news@shop.example' } }),
     makeEmail({ id: 'r2', from: { name: 'Shop News', email: 'news@shop.example' } }),
@@ -18,7 +18,7 @@ function reconInbox(): EmailMeta[] {
 
 describe('analyzeInbox', () => {
   test('aggregates by sender and root domain, sorted desc, never mutating', async () => {
-    const inner = new MemoryMailProvider(reconInbox())
+    const inner = createMemoryMailProvider(reconInbox())
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider)
 
@@ -47,7 +47,7 @@ describe('analyzeInbox', () => {
 
   test('honors a custom query', async () => {
     const emails = [...reconInbox(), makeEmail({ id: 'x1', labels: ['Archive'] })]
-    const { ctx } = makeCtx(new MemoryMailProvider(emails))
+    const { ctx } = makeCtx(createMemoryMailProvider(emails))
 
     const report = await analyzeInbox(ctx, { query: { inMailbox: 'Archive' } })
 
@@ -55,7 +55,7 @@ describe('analyzeInbox', () => {
   })
 
   test('ctx.max caps the scan', async () => {
-    const { ctx } = makeCtx(new MemoryMailProvider(reconInbox()), { max: 3 })
+    const { ctx } = makeCtx(createMemoryMailProvider(reconInbox()), { max: 3 })
     const report = await analyzeInbox(ctx)
     expect(report.scanned).toBe(3)
   })
@@ -74,7 +74,7 @@ describe('planClassification', () => {
   }
 
   test('distribution, coverage to 1 decimal, and unmatched top senders', async () => {
-    const inner = new MemoryMailProvider(reconInbox())
+    const inner = createMemoryMailProvider(reconInbox())
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider, { config: PLAN_CONFIG })
 
@@ -94,7 +94,7 @@ describe('planClassification', () => {
   })
 
   test('empty inbox yields zero coverage, not NaN', async () => {
-    const { ctx } = makeCtx(new MemoryMailProvider([]))
+    const { ctx } = makeCtx(createMemoryMailProvider([]))
     const report = await planClassification(ctx)
     expect(report).toMatchObject({
       scanned: 0,

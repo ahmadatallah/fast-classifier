@@ -30,7 +30,7 @@ describe('denyAll / allowAll', () => {
   })
 })
 
-async function ask(answer: string): Promise<{ result: boolean; prompt: string }> {
+const ask = async (answer: string): Promise<{ result: boolean; prompt: string }> => {
   const input = new PassThrough()
   const output = new PassThrough()
   const confirm = interactiveConfirm(input, output)

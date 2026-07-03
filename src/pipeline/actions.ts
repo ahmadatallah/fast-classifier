@@ -17,7 +17,7 @@ export interface ExecuteResult {
   skippedByConfirm: boolean
 }
 
-function summarize(actions: PlannedAction[]): string {
+const summarize = (actions: PlannedAction[]): string => {
   const tally = new Map<string, number>()
   for (const action of actions) {
     for (const label of action.addLabels) tally.set(label, (tally.get(label) ?? 0) + 1)
@@ -32,10 +32,10 @@ function summarize(actions: PlannedAction[]): string {
     : `${actions.length} planned mutations (${top})`
 }
 
-function batchOptions(
+const batchOptions = (
   ctx: PipelineContext,
   onProgress: (done: number, total: number) => void,
-): BatchOptions {
+): BatchOptions => {
   const opts: BatchOptions = {
     batchSize: ctx.config.ops.batchSize,
     delayMs: ctx.config.ops.batchDelayMs,
@@ -46,7 +46,10 @@ function batchOptions(
 }
 
 /** onProgress fires once per chunk; log every ops.progressEvery chunks. */
-function progressLogger(ctx: PipelineContext, what: string): (done: number, total: number) => void {
+const progressLogger = (
+  ctx: PipelineContext,
+  what: string,
+): ((done: number, total: number) => void) => {
   let chunks = 0
   return (done, total) => {
     chunks++
@@ -62,12 +65,12 @@ function progressLogger(ctx: PipelineContext, what: string): (done: number, tota
  * archive pass. Each successful addLabels chunk is audited BEFORE the next
  * chunk runs, so an interrupted run resumes without duplicating work.
  */
-export async function executeActions(
+export const executeActions = async (
   ctx: PipelineContext,
   command: string,
   actions: PlannedAction[],
   audit?: TsvAudit,
-): Promise<ExecuteResult> {
+): Promise<ExecuteResult> => {
   if (ctx.dryRun || actions.length === 0) return { executed: 0, skippedByConfirm: false }
 
   if (needsConfirmation(actions.length, ctx.confirmThreshold)) {

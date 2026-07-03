@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { McpMailProvider } from '../../../src/provider/mcp/provider.js'
+import { createMcpMailProvider } from '../../../src/provider/mcp/provider.js'
 
 interface RecordedCall {
   method: string
@@ -11,7 +11,7 @@ interface RecordedCall {
  * routes tools/call by tool name to canned data (wrapped as content[] text),
  * and records every JSON-RPC call.
  */
-function makeProvider(routes: Record<string, unknown>) {
+const makeProvider = (routes: Record<string, unknown>) => {
   const calls: RecordedCall[] = []
   const fetchImpl = ((_input: string | URL | Request, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body)) as {
@@ -30,7 +30,7 @@ function makeProvider(routes: Record<string, unknown>) {
       new Response(sse, { status: 200, headers: { 'mcp-session-id': 'sess-1' } }),
     )
   }) as typeof fetch
-  const provider = new McpMailProvider({ token: 'test-token', fetch: fetchImpl })
+  const provider = createMcpMailProvider({ token: 'test-token', fetch: fetchImpl })
   const toolCalls = () =>
     calls
       .filter((c) => c.method === 'tools/call')

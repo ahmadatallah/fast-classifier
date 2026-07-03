@@ -5,7 +5,8 @@ import { compileConfig } from '../../src/config/compile.js'
 import type { ClassifierConfigInput } from '../../src/config/schema.js'
 import { classifierConfigSchema } from '../../src/config/schema.js'
 import { createServer } from '../../src/mcp-server/server.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import type { MemoryMailProvider } from '../../src/provider/memory.js'
 import type { MailProvider } from '../../src/provider/types.js'
 
 interface Connected {
@@ -13,10 +14,10 @@ interface Connected {
   close: () => Promise<void>
 }
 
-async function connect(
+const connect = async (
   provider: MailProvider,
   opts: { config?: ClassifierConfigInput; allowExecute?: boolean } = {},
-): Promise<Connected> {
+): Promise<Connected> => {
   const config = classifierConfigSchema.parse(opts.config ?? {})
   const server = createServer({
     provider,
@@ -36,8 +37,8 @@ async function connect(
   }
 }
 
-function sampleMailbox(): MemoryMailProvider {
-  return new MemoryMailProvider([
+const sampleMailbox = (): MemoryMailProvider => {
+  return createMemoryMailProvider([
     makeEmail({
       id: 'n1',
       from: { name: 'Deals Daily', email: 'news@deals.example' },
@@ -77,7 +78,7 @@ const SAMPLE_CONFIG: ClassifierConfigInput = {
   keepList: ['friend@example.org'],
 }
 
-async function inboxIds(provider: MailProvider): Promise<string[]> {
+const inboxIds = async (provider: MailProvider): Promise<string[]> => {
   const page = await provider.searchEmails({ inMailbox: 'inbox' }, { position: 0, limit: 1000 })
   return page.items.map((email) => email.id).sort()
 }

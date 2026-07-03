@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { JmapClient, throwIfRateLimited } from '../../../src/provider/jmap/client.js'
+import { createJmapClient, throwIfRateLimited } from '../../../src/provider/jmap/client.js'
 import type { JmapMethodResponse } from '../../../src/provider/jmap/client.js'
 import {
   NeverDeleteViolation,
@@ -8,7 +8,7 @@ import {
 } from '../../../src/provider/types.js'
 import { SESSION, fakeFetch, jmapResponse } from './fake-fetch.js'
 
-async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
+const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> => {
   return promise.then(
     () => {
       throw new Error('expected promise to reject')
@@ -20,7 +20,7 @@ async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
 describe('JmapClient.connect', () => {
   test('parses session doc: apiUrl + primary mail account, Bearer auth on default URL', async () => {
     const { fetch, requests } = fakeFetch([{ body: SESSION }])
-    const client = new JmapClient({ token: 'tok-1', fetch })
+    const client = createJmapClient({ token: 'tok-1', fetch })
     await client.connect()
     expect(requests).toHaveLength(1)
     expect(requests[0]?.url).toBe('https://api.fastmail.com/jmap/session')
@@ -31,7 +31,7 @@ describe('JmapClient.connect', () => {
 
   test('is idempotent: second connect does not refetch the session', async () => {
     const { fetch, requests } = fakeFetch([{ body: SESSION }])
-    const client = new JmapClient({ token: 't', fetch })
+    const client = createJmapClient({ token: 't', fetch })
     await client.connect()
     await client.connect()
     expect(requests).toHaveLength(1)
@@ -39,14 +39,14 @@ describe('JmapClient.connect', () => {
 
   test('respects a custom sessionUrl', async () => {
     const { fetch, requests } = fakeFetch([{ body: SESSION }])
-    const client = new JmapClient({ token: 't', sessionUrl: 'https://alt.test/session', fetch })
+    const client = createJmapClient({ token: 't', sessionUrl: 'https://alt.test/session', fetch })
     await client.connect()
     expect(requests[0]?.url).toBe('https://alt.test/session')
   })
 
   test('401 → TransportError carrying status and body snippet', async () => {
     const { fetch } = fakeFetch([{ status: 401, body: { detail: 'bad token' } }])
-    const client = new JmapClient({ token: 'bad', fetch })
+    const client = createJmapClient({ token: 'bad', fetch })
     const error = await rejectionOf(client.connect())
     expect(error).toBeInstanceOf(TransportError)
     expect((error as Error).message).toContain('401')
@@ -54,7 +54,7 @@ describe('JmapClient.connect', () => {
   })
 
   test('accountId throws before connect', () => {
-    const client = new JmapClient({ token: 't', fetch: fakeFetch([]).fetch })
+    const client = createJmapClient({ token: 't', fetch: fakeFetch([]).fetch })
     expect(() => client.accountId).toThrow(TransportError)
   })
 })
@@ -65,7 +65,7 @@ describe('JmapClient.request', () => {
       { body: SESSION },
       jmapResponse(['Mailbox/get', { list: [] }, '0']),
     ])
-    const client = new JmapClient({ token: 'tok-2', fetch })
+    const client = createJmapClient({ token: 'tok-2', fetch })
     await client.connect()
     const responses = await client.request([['Mailbox/get', { accountId: 'acct-1' }, '0']])
     expect(requests[1]?.url).toBe(SESSION.apiUrl)
@@ -80,7 +80,7 @@ describe('JmapClient.request', () => {
 
   test('never-delete: destroy in args → NeverDeleteViolation before any fetch', async () => {
     const { fetch, requests } = fakeFetch([{ body: SESSION }])
-    const client = new JmapClient({ token: 't', fetch })
+    const client = createJmapClient({ token: 't', fetch })
     await client.connect()
     expect(requests).toHaveLength(1)
     const error = await rejectionOf(
@@ -92,7 +92,7 @@ describe('JmapClient.request', () => {
 
   test('never-delete: onDestroyRemoveEmails in args → NeverDeleteViolation before any fetch', async () => {
     const { fetch, requests } = fakeFetch([{ body: SESSION }])
-    const client = new JmapClient({ token: 't', fetch })
+    const client = createJmapClient({ token: 't', fetch })
     await client.connect()
     const error = await rejectionOf(
       client.request([['Mailbox/set', { accountId: 'acct-1', onDestroyRemoveEmails: true }, '0']]),
@@ -106,7 +106,7 @@ describe('JmapClient.request', () => {
       { body: SESSION },
       jmapResponse(['error', { type: 'unknownMethod' }, '0']),
     ])
-    const client = new JmapClient({ token: 't', fetch })
+    const client = createJmapClient({ token: 't', fetch })
     await client.connect()
     const error = await rejectionOf(client.request([['Nope/get', {}, '0']]))
     expect(error).toBeInstanceOf(TransportError)
@@ -118,7 +118,7 @@ describe('JmapClient.request', () => {
       { body: SESSION },
       { status: 429, body: {}, headers: { 'retry-after': '3' } },
     ])
-    const client = new JmapClient({ token: 't', fetch })
+    const client = createJmapClient({ token: 't', fetch })
     await client.connect()
     const error = await rejectionOf(client.request([['Email/query', {}, '0']]))
     expect(error).toBeInstanceOf(RateLimitError)
@@ -127,7 +127,7 @@ describe('JmapClient.request', () => {
 
   test('request before connect throws TransportError without fetching', async () => {
     const { fetch, requests } = fakeFetch([])
-    const client = new JmapClient({ token: 't', fetch })
+    const client = createJmapClient({ token: 't', fetch })
     const error = await rejectionOf(client.request([['Email/query', {}, '0']]))
     expect(error).toBeInstanceOf(TransportError)
     expect(requests).toHaveLength(0)

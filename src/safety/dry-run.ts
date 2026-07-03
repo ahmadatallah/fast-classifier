@@ -16,7 +16,7 @@ const MUTATING = new Set<PropertyKey>(MUTATING_METHODS)
  * Enforced at the transport boundary: a bug anywhere upstream physically
  * cannot mutate mail in dry-run mode.
  */
-export function readOnlyProvider(provider: MailProvider): MailProvider {
+export const readOnlyProvider = (provider: MailProvider): MailProvider => {
   return new Proxy(provider, {
     get(target, prop) {
       if (MUTATING.has(prop)) {

@@ -17,5 +17,5 @@ export {
   type PageRequest,
   type ProviderCapabilities,
 } from './provider/types.js'
-export { paginate, Pager, type PagerOptions } from './provider/paging.js'
+export { paginate, type Pager, type PagerOptions } from './provider/paging.js'
 export { batchExecute, type BatchOptions } from './provider/batching.js'

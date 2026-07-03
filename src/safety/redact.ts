@@ -5,11 +5,11 @@ const REDACTED = '[REDACTED]'
 /** Env vars whose current values are scrubbed wherever they appear. */
 const TOKEN_ENV_VARS = ['FASTMAIL_API_TOKEN', 'FASTMAIL_MCP_TOKEN'] as const
 
-function escapeRegExp(literal: string): string {
+const escapeRegExp = (literal: string): string => {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-export function redact(text: string): string {
+export const redact = (text: string): string => {
   let out = text
     .replace(/fmu1-[0-9]+-[a-f0-9-]+/g, REDACTED)
     .replace(/(Bearer\s+)\S+/g, `$1${REDACTED}`)
@@ -23,7 +23,7 @@ export function redact(text: string): string {
 }
 
 /** Returns a NEW Error with redacted message and stack; original is untouched. */
-export function redactError(err: unknown): Error {
+export const redactError = (err: unknown): Error => {
   if (err instanceof Error) {
     const clean = new Error(redact(err.message))
     clean.name = err.name
@@ -34,7 +34,7 @@ export function redactError(err: unknown): Error {
 }
 
 /** Structural clone applying redact() to every string; other primitives pass through. */
-export function redactDeep<T>(value: T): T {
+export const redactDeep = <T>(value: T): T => {
   if (typeof value === 'string') return redact(value) as T
   if (Array.isArray(value)) return value.map((item) => redactDeep(item)) as T
   if (value !== null && typeof value === 'object') {

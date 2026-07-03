@@ -43,7 +43,7 @@ export interface CompiledRules {
 
 const lower = (s: string) => s.toLowerCase()
 
-export function compileConfig(config: ClassifierConfig): CompiledRules {
+export const compileConfig = (config: ClassifierConfig): CompiledRules => {
   const senderMap = new Map<string, string>()
   const domainMap = new Map<string, string>()
   const nameRules: NameRule[] = []

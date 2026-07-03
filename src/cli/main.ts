@@ -10,7 +10,7 @@ export type { CliDeps } from './commands.js'
 export { defaultProviderFactory } from './provider-factory.js'
 export type { ProviderFactory } from './provider-factory.js'
 
-export function buildProgram(deps: CliDeps): Command {
+export const buildProgram = (deps: CliDeps): Command => {
   const program = new Command()
   program
     .name('fast-classifier')
@@ -27,7 +27,7 @@ export function buildProgram(deps: CliDeps): Command {
   return program
 }
 
-function invokedAsBin(): boolean {
+const invokedAsBin = (): boolean => {
   const argv1 = process.argv[1]
   if (argv1 === undefined) return false
   try {

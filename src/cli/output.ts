@@ -10,7 +10,7 @@ import type {
 import type { Label } from '../types.js'
 
 /** Plain padEnd table — the CLI has no formatting dependencies on purpose. */
-export function table(headers: string[], rows: string[][]): string {
+export const table = (headers: string[], rows: string[][]): string => {
   const widths = headers.map((header, i) =>
     Math.max(header.length, ...rows.map((row) => (row[i] ?? '').length)),
   )
@@ -22,17 +22,17 @@ export function table(headers: string[], rows: string[][]): string {
   return [line(headers), line(widths.map((w) => '-'.repeat(w))), ...rows.map(line)].join('\n')
 }
 
-function truncate(text: string, max: number): string {
+const truncate = (text: string, max: number): string => {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`
 }
 
-function metaLine(meta: RunMeta): string {
+const metaLine = (meta: RunMeta): string => {
   return `${meta.command}${meta.dryRun ? ' (dry run)' : ''} — started ${meta.startedAt}`
 }
 
 const num = (n: number): string => String(n)
 
-export function formatAnalyze(report: AnalyzeReport): string {
+export const formatAnalyze = (report: AnalyzeReport): string => {
   const senders = table(
     ['count', 'sender', 'name'],
     report.senders.slice(0, 15).map((s) => [num(s.count), s.email, truncate(s.name, 30)]),
@@ -56,7 +56,7 @@ export function formatAnalyze(report: AnalyzeReport): string {
   ].join('\n')
 }
 
-export function formatPlan(report: PlanReport): string {
+export const formatPlan = (report: PlanReport): string => {
   const distribution = table(
     ['count', 'category'],
     Object.entries(report.distribution).map(([category, count]) => [num(count), category]),
@@ -80,7 +80,7 @@ export function formatPlan(report: PlanReport): string {
   ].join('\n')
 }
 
-export function formatSweep(report: SweepReport): string {
+export const formatSweep = (report: SweepReport): string => {
   const senders = table(
     ['count', 'sender'],
     report.topSenders.map((s) => [num(s.count), s.email]),
@@ -95,7 +95,7 @@ export function formatSweep(report: SweepReport): string {
   return lines.join('\n')
 }
 
-export function formatFile(report: FileReport): string {
+export const formatFile = (report: FileReport): string => {
   const tally = table(
     ['count', 'category'],
     Object.entries(report.tally).map(([category, count]) => [num(count), category]),
@@ -117,7 +117,7 @@ export function formatFile(report: FileReport): string {
   return lines.join('\n')
 }
 
-export function formatNeedsAction(report: NeedsActionReport): string {
+export const formatNeedsAction = (report: NeedsActionReport): string => {
   const candidates = table(
     ['score', 'received', 'sender', 'subject'],
     report.candidates
@@ -133,7 +133,7 @@ export function formatNeedsAction(report: NeedsActionReport): string {
   ].join('\n')
 }
 
-export function formatVerify(report: VerifyReport): string {
+export const formatVerify = (report: VerifyReport): string => {
   const checks = report.checks.map(
     (check) => `${check.ok ? 'PASS' : 'FAIL'}  ${check.name} — ${check.detail}`,
   )
@@ -145,18 +145,18 @@ export function formatVerify(report: VerifyReport): string {
   ].join('\n')
 }
 
-export function formatLabels(labels: Label[]): string {
+export const formatLabels = (labels: Label[]): string => {
   const rows = [...labels]
     .sort((a, b) => (a.path ?? a.name).localeCompare(b.path ?? b.name))
     .map((label) => [label.path ?? label.name, label.role ?? '', num(label.totalEmails ?? 0)])
   return `${table(['label', 'role', 'emails'], rows)}\n`
 }
 
-export function formatEnsurePlan(names: string[]): string {
+export const formatEnsurePlan = (names: string[]): string => {
   return `would ensure ${names.length} label(s): ${names.join(', ')}\n`
 }
 
-export function formatEnsured(labels: Label[]): string {
+export const formatEnsured = (labels: Label[]): string => {
   const rows = labels.map((label) => [label.path ?? label.name, label.id])
   return `ensured ${labels.length} label(s):\n${table(['label', 'id'], rows)}\n`
 }

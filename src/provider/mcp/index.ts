@@ -1,4 +1,5 @@
-export { McpHttpClient, MCP_PROTOCOL_VERSION } from './http-client.js'
-export type { McpHttpClientOptions } from './http-client.js'
+export { createMcpHttpClient, MCP_PROTOCOL_VERSION } from './http-client.js'
+export type { McpHttpClient, McpHttpClientOptions } from './http-client.js'
 export { buildSearchString } from './query.js'
-export { McpMailProvider } from './provider.js'
+export { createMcpMailProvider } from './provider.js'
+export type { McpMailProvider } from './provider.js'

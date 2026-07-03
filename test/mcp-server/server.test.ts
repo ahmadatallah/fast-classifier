@@ -5,7 +5,7 @@ import { compileConfig } from '../../src/config/compile.js'
 import type { ClassifierConfigInput } from '../../src/config/schema.js'
 import { classifierConfigSchema } from '../../src/config/schema.js'
 import { createServer } from '../../src/mcp-server/server.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import type { MailProvider } from '../../src/provider/types.js'
 
 interface Connected {
@@ -13,10 +13,10 @@ interface Connected {
   close: () => Promise<void>
 }
 
-async function connect(
+const connect = async (
   provider: MailProvider,
   opts: { config?: ClassifierConfigInput; allowExecute?: boolean } = {},
-): Promise<Connected> {
+): Promise<Connected> => {
   const config = classifierConfigSchema.parse(opts.config ?? {})
   const server = createServer({
     provider,
@@ -65,7 +65,7 @@ const READ_ONLY_TOOLS = [
 
 describe('createServer', () => {
   test('lists every tool with honest annotations', async () => {
-    const { client, close } = await connect(new MemoryMailProvider([]))
+    const { client, close } = await connect(createMemoryMailProvider([]))
     try {
       const { tools } = await client.listTools()
       const byName = new Map(tools.map((tool) => [tool.name, tool]))
@@ -88,7 +88,7 @@ describe('createServer', () => {
   })
 
   test('classify_sender matches a domain rule without touching the provider', async () => {
-    const { client, close } = await connect(new MemoryMailProvider([]), { config: RULE_CONFIG })
+    const { client, close } = await connect(createMemoryMailProvider([]), { config: RULE_CONFIG })
     try {
       const result = await client.callTool({
         name: 'classify_sender',
@@ -110,7 +110,7 @@ describe('createServer', () => {
   })
 
   test('classify_sender returns null for an unmatched sender', async () => {
-    const { client, close } = await connect(new MemoryMailProvider([]), { config: RULE_CONFIG })
+    const { client, close } = await connect(createMemoryMailProvider([]), { config: RULE_CONFIG })
     try {
       const result = await client.callTool({
         name: 'classify_sender',
@@ -123,7 +123,7 @@ describe('createServer', () => {
   })
 
   test('analyze_inbox tallies senders read-only', async () => {
-    const provider = new MemoryMailProvider([
+    const provider = createMemoryMailProvider([
       makeEmail({ id: 'a', from: { name: 'A', email: 'a@one.example' } }),
       makeEmail({ id: 'b', from: { name: 'A', email: 'a@one.example' } }),
       makeEmail({ id: 'c', from: { name: 'B', email: 'b@two.example' } }),
@@ -156,7 +156,7 @@ describe('createServer', () => {
     test('output contains no token-looking strings', async () => {
       const secret = 'test-secret-token-value-9f8e7d'
       process.env[TOKEN_VAR] = secret
-      const { client, close } = await connect(new MemoryMailProvider([]), {
+      const { client, close } = await connect(createMemoryMailProvider([]), {
         // smuggle the env token value into a config field to prove redaction
         config: { sweep: { textHeuristic: secret } },
       })
@@ -175,7 +175,7 @@ describe('createServer', () => {
   })
 
   test('tool failures come back as redacted isError results, not protocol errors', async () => {
-    const provider = new MemoryMailProvider([])
+    const provider = createMemoryMailProvider([])
     provider.listLabels = () => Promise.reject(new Error('boom Bearer abc123secret'))
     const { client, close } = await connect(provider)
     try {

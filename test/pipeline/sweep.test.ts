@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { sweepNewsletters } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import type { MemoryMailProvider } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import type { PageRequest } from '../../src/provider/types.js'
 import type { EmailMeta, SearchPage, SearchQuery } from '../../src/types.js'
 import { expectMeta, inboxIds, makeCtx } from './helpers.js'
@@ -12,17 +13,16 @@ const KEEP = 'friend@example.com'
  * server-side notFrom filter is deliberately DROPPED, so keep-listed senders
  * come back from search and only the client-side re-check protects them.
  */
-class NotFromIgnoringProvider extends MemoryMailProvider {
-  constructor(emails: EmailMeta[]) {
-    super(emails, { caps: { serverSideNotFrom: 'address-only' } })
-  }
-
-  override searchEmails(query: SearchQuery, page: PageRequest): Promise<SearchPage> {
-    return super.searchEmails({ ...query, notFrom: undefined }, page)
+const createNotFromIgnoringProvider = (emails: EmailMeta[]): MemoryMailProvider => {
+  const inner = createMemoryMailProvider(emails, { caps: { serverSideNotFrom: 'address-only' } })
+  return {
+    ...inner,
+    searchEmails: (query: SearchQuery, page: PageRequest): Promise<SearchPage> =>
+      inner.searchEmails({ ...query, notFrom: undefined }, page),
   }
 }
 
-function sweepInbox(): EmailMeta[] {
+const sweepInbox = (): EmailMeta[] => {
   return [
     makeEmail({
       id: 'k1',
@@ -56,7 +56,7 @@ function sweepInbox(): EmailMeta[] {
 
 describe('sweepNewsletters', () => {
   test('client-side keep re-check protects keep-listed senders even when notFrom is ignored', async () => {
-    const provider = new NotFromIgnoringProvider(sweepInbox())
+    const provider = createNotFromIgnoringProvider(sweepInbox())
     const { ctx } = makeCtx(provider, { config: { keepList: [KEEP] } })
 
     const report = await sweepNewsletters(ctx)
@@ -83,7 +83,7 @@ describe('sweepNewsletters', () => {
   })
 
   test('warns when keepList is empty', async () => {
-    const provider = new MemoryMailProvider(sweepInbox())
+    const provider = createMemoryMailProvider(sweepInbox())
     const { ctx, logs } = makeCtx(provider)
 
     await sweepNewsletters(ctx)
@@ -92,7 +92,7 @@ describe('sweepNewsletters', () => {
   })
 
   test('does not warn when keepList is populated', async () => {
-    const provider = new MemoryMailProvider(sweepInbox())
+    const provider = createMemoryMailProvider(sweepInbox())
     const { ctx, logs } = makeCtx(provider, { config: { keepList: [KEEP] } })
 
     await sweepNewsletters(ctx)
@@ -110,7 +110,7 @@ describe('sweepNewsletters', () => {
         receivedAt: '2020-06-01T00:00:00Z',
       }),
     ]
-    const provider = new MemoryMailProvider(emails)
+    const provider = createMemoryMailProvider(emails)
     const { ctx } = makeCtx(provider, { config: { keepList: [KEEP] } })
 
     const report = await sweepNewsletters(ctx, { targetLabel: 'Bulk', after: '2025-01-01' })

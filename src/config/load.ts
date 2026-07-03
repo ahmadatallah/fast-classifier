@@ -25,7 +25,7 @@ const SECRET_KEY = /^(token|api[-_]?token|api[-_]?key|secret|password|bearer)$/i
 const SECRET_VALUE = /fmu1-[0-9]+-[a-f0-9]+|^Bearer\s+\S{16,}/
 
 /** Recursively reject secret-shaped keys/values BEFORE schema parsing. */
-export function assertNoSecrets(value: unknown, keyPath = 'config'): void {
+export const assertNoSecrets = (value: unknown, keyPath = 'config'): void => {
   if (typeof value === 'string') {
     if (SECRET_VALUE.test(value)) throw new ConfigSecretError(keyPath, 'token-shaped value')
     return
@@ -48,7 +48,7 @@ export interface LoadedConfig {
   path: string | null
 }
 
-async function exists(path: string): Promise<boolean> {
+const exists = async (path: string): Promise<boolean> => {
   try {
     await access(path)
     return true
@@ -57,7 +57,7 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-async function readConfigFile(absPath: string): Promise<unknown> {
+const readConfigFile = async (absPath: string): Promise<unknown> => {
   if (absPath.endsWith('.json')) {
     return JSON.parse(await readFile(absPath, 'utf8'))
   }
@@ -88,10 +88,10 @@ async function readConfigFile(absPath: string): Promise<unknown> {
  * > .mjs > .js > .json in cwd > built-in defaults. Tokens are refused in files
  * (env-only) and validation is zod-strict.
  */
-export async function loadConfig(
+export const loadConfig = async (
   explicitPath?: string,
   cwd: string = process.cwd(),
-): Promise<LoadedConfig> {
+): Promise<LoadedConfig> => {
   let path: string | null = null
   if (explicitPath) {
     path = resolve(cwd, explicitPath)
@@ -113,10 +113,10 @@ export async function loadConfig(
 }
 
 /** Read the transport credential from the environment (never from config). */
-export function tokenFromEnv(
+export const tokenFromEnv = (
   provider: 'jmap' | 'mcp',
   env: Record<string, string | undefined> = process.env,
-): string {
+): string => {
   const name = provider === 'jmap' ? 'FASTMAIL_API_TOKEN' : 'FASTMAIL_MCP_TOKEN'
   const token = env[name]
   if (!token) {

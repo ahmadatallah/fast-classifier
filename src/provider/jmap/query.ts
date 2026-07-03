@@ -6,10 +6,10 @@ import type { SearchQuery } from '../../types.js'
  * other value must already be a mailbox id (the provider resolves label
  * names before calling).
  */
-export function buildEmailFilter(
+export const buildEmailFilter = (
   query: SearchQuery,
   inboxId: string | null,
-): Record<string, unknown> {
+): Record<string, unknown> => {
   const base: Record<string, unknown> = {}
   if (query.inMailbox !== undefined) {
     const id = query.inMailbox === 'inbox' ? inboxId : query.inMailbox

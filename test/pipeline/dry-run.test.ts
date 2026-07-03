@@ -6,12 +6,12 @@ import {
   sweepNewsletters,
 } from '../../src/pipeline/index.js'
 import type { PlannedAction } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import { DryRunViolation } from '../../src/safety/index.js'
 import type { EmailMeta } from '../../src/types.js'
 import { inboxIds, makeCtx, recordingProvider } from './helpers.js'
 
-function bulkEmails(count: number): EmailMeta[] {
+const bulkEmails = (count: number): EmailMeta[] => {
   return Array.from({ length: count }, (_, i) =>
     makeEmail({
       id: `b${i}`,
@@ -24,7 +24,7 @@ function bulkEmails(count: number): EmailMeta[] {
 describe('dry-run', () => {
   test('sweep dry-run returns the full multi-page plan with zero mutating calls', async () => {
     // 120 emails at pageLimit 10 = 12+ pages; scan mode must see them all
-    const inner = new MemoryMailProvider(bulkEmails(120), { caps: { maxPageSize: 10 } })
+    const inner = createMemoryMailProvider(bulkEmails(120), { caps: { maxPageSize: 10 } })
     const { provider, mutations } = recordingProvider(inner)
     const { ctx, logs } = makeCtx(provider, { dryRun: true })
 
@@ -45,7 +45,7 @@ describe('dry-run', () => {
     const emails = Array.from({ length: 30 }, (_, i) =>
       makeEmail({ id: `f${i}`, from: { name: 'Bank', email: 'billing@bank.example' } }),
     )
-    const inner = new MemoryMailProvider(emails, { caps: { maxPageSize: 7 } })
+    const inner = createMemoryMailProvider(emails, { caps: { maxPageSize: 7 } })
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider, {
       dryRun: true,
@@ -67,7 +67,7 @@ describe('dry-run', () => {
   })
 
   test('readProvider hands out a provider whose mutators throw DryRunViolation', async () => {
-    const { ctx } = makeCtx(new MemoryMailProvider(bulkEmails(2)), { dryRun: true })
+    const { ctx } = makeCtx(createMemoryMailProvider(bulkEmails(2)), { dryRun: true })
     const provider = readProvider(ctx)
 
     expect(() => provider.addLabels(['b0'], ['X'])).toThrow(DryRunViolation)
@@ -79,13 +79,13 @@ describe('dry-run', () => {
   })
 
   test('readProvider returns the raw provider when not in dry-run', () => {
-    const provider = new MemoryMailProvider([])
+    const provider = createMemoryMailProvider([])
     const { ctx } = makeCtx(provider)
     expect(readProvider(ctx)).toBe(provider)
   })
 
   test('executeActions in dry-run returns immediately, before any provider call', async () => {
-    const inner = new MemoryMailProvider(bulkEmails(3))
+    const inner = createMemoryMailProvider(bulkEmails(3))
     const { provider, mutations } = recordingProvider(inner)
     const { ctx } = makeCtx(provider, { dryRun: true })
     const actions: PlannedAction[] = [

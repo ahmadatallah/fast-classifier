@@ -32,10 +32,10 @@ export interface NeedsActionReport {
 const DAY_MS = 86_400_000
 
 /** Score the recent inbox window for mail that likely needs a human response. */
-export async function scoreInboxNeedsAction(
+export const scoreInboxNeedsAction = async (
   ctx: PipelineContext,
   opts: NeedsActionOptions = {},
-): Promise<NeedsActionReport> {
+): Promise<NeedsActionReport> => {
   return withMeta('needs-action', ctx, async () => {
     const now = opts.now ?? new Date()
     const after = new Date(now.getTime() - ctx.compiled.needsAction.windowDays * DAY_MS)

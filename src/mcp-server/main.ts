@@ -3,24 +3,24 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { compileConfig } from '../config/compile.js'
 import { loadConfig, tokenFromEnv } from '../config/load.js'
 import type { ClassifierConfig } from '../config/schema.js'
-import { JmapMailProvider } from '../provider/jmap/index.js'
-import { McpMailProvider } from '../provider/mcp/index.js'
+import { createJmapMailProvider } from '../provider/jmap/index.js'
+import { createMcpMailProvider } from '../provider/mcp/index.js'
 import type { MailProvider } from '../provider/types.js'
 import { redactError } from '../safety/redact.js'
 import { createServer } from './server.js'
 
 /** Local factory — the lint boundary keeps shells (cli/, mcp-server/) from importing each other. */
-function makeProvider(config: ClassifierConfig): MailProvider {
+const makeProvider = (config: ClassifierConfig): MailProvider => {
   const type = config.provider.type
   const token = tokenFromEnv(type)
   const baseUrl = config.provider.baseUrl
   if (type === 'mcp') {
-    return new McpMailProvider(baseUrl === undefined ? { token } : { token, endpoint: baseUrl })
+    return createMcpMailProvider(baseUrl === undefined ? { token } : { token, endpoint: baseUrl })
   }
-  return new JmapMailProvider(baseUrl === undefined ? { token } : { token, sessionUrl: baseUrl })
+  return createJmapMailProvider(baseUrl === undefined ? { token } : { token, sessionUrl: baseUrl })
 }
 
-async function main(): Promise<void> {
+const main = async (): Promise<void> => {
   // stdout carries the MCP protocol — every human-facing line goes to stderr
   const log = (message: string) => process.stderr.write(`${message}\n`)
   const { config, path } = await loadConfig()

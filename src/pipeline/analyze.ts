@@ -21,10 +21,10 @@ export interface AnalyzeReport {
 }
 
 /** Read-only recon: who is filling the inbox, by sender and by root domain. */
-export async function analyzeInbox(
+export const analyzeInbox = async (
   ctx: PipelineContext,
   opts?: { query?: SearchQuery },
-): Promise<AnalyzeReport> {
+): Promise<AnalyzeReport> => {
   return withMeta('analyze', ctx, async () => {
     let scanned = 0
     const senders = new Map<string, { name: string; count: number }>()

@@ -59,6 +59,6 @@ export interface SearchPage {
 }
 
 /** Does a label list/name match `name`, which may be a leaf name or a 'Parent/Child' path? */
-export function labelMatches(label: Label, name: string): boolean {
+export const labelMatches = (label: Label, name: string): boolean => {
   return label.name === name || label.path === name || label.path === `Inbox/${name}`
 }

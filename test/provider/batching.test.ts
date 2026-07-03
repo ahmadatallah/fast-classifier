@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { batchExecute } from '../../src/provider/batching.js'
 import { RateLimitError } from '../../src/provider/types.js'
 
-function recordingSleep() {
+const recordingSleep = () => {
   const calls: number[] = []
   const sleep = (ms: number): Promise<void> => {
     calls.push(ms)

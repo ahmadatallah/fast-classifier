@@ -6,7 +6,7 @@ import { getDomain } from 'tldts'
  * last-two-labels split wrongly produced 'co.uk'). Returns null for empty or
  * single-label input.
  */
-export function rootDomain(emailOrDomain: string): string | null {
+export const rootDomain = (emailOrDomain: string): string | null => {
   const input = emailOrDomain.trim().toLowerCase()
   const at = input.lastIndexOf('@')
   const host = at >= 0 ? input.slice(at + 1) : input

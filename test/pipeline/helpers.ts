@@ -15,10 +15,10 @@ export interface CtxOverrides {
   confirmThreshold?: number
 }
 
-export function makeCtx(
+export const makeCtx = (
   provider: MailProvider,
   overrides: CtxOverrides = {},
-): { ctx: PipelineContext; logs: string[] } {
+): { ctx: PipelineContext; logs: string[] } => {
   const config = classifierConfigSchema.parse(overrides.config ?? {})
   const logs: string[] = []
   const ctx: PipelineContext = {
@@ -38,10 +38,12 @@ export function makeCtx(
 const MUTATING = new Set<PropertyKey>(MUTATING_METHODS)
 
 /** Delegating proxy that records the name of every mutating call. */
-export function recordingProvider(inner: MailProvider): {
+export const recordingProvider = (
+  inner: MailProvider,
+): {
   provider: MailProvider
   mutations: string[]
-} {
+} => {
   const mutations: string[] = []
   const provider = new Proxy(inner, {
     get(target, prop) {
@@ -60,18 +62,18 @@ export function recordingProvider(inner: MailProvider): {
   return { provider, mutations }
 }
 
-export async function inboxIds(provider: MailProvider): Promise<string[]> {
+export const inboxIds = async (provider: MailProvider): Promise<string[]> => {
   const page = await provider.searchEmails({ inMailbox: 'inbox' }, { position: 0, limit: 10_000 })
   return page.items.map((email) => email.id)
 }
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
 
-export function expectMeta(
+export const expectMeta = (
   meta: { command: string; dryRun: boolean; startedAt: string; finishedAt: string },
   command: string,
   dryRun: boolean,
-): void {
+): void => {
   if (meta.command !== command) throw new Error(`meta.command ${meta.command} !== ${command}`)
   if (meta.dryRun !== dryRun) throw new Error(`meta.dryRun ${meta.dryRun} !== ${dryRun}`)
   if (!ISO_RE.test(meta.startedAt)) throw new Error(`startedAt not ISO: ${meta.startedAt}`)

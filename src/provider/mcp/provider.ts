@@ -2,7 +2,7 @@ import type { EmailMeta, Label, SearchPage, SearchQuery, SenderInfo } from '../.
 import { labelMatches } from '../../types.js'
 import type { MailProvider, PageRequest, ProviderCapabilities } from '../types.js'
 import { TransportError } from '../types.js'
-import { McpHttpClient } from './http-client.js'
+import { createMcpHttpClient } from './http-client.js'
 import type { McpHttpClientOptions } from './http-client.js'
 import { buildSearchString } from './query.js'
 
@@ -34,14 +34,14 @@ interface RawLabel {
 }
 
 /** The server answers EITHER with a bare array OR { items: [...] } — the session hit both. */
-function toArray<T>(r: unknown): T[] {
+const toArray = <T>(r: unknown): T[] => {
   if (Array.isArray(r)) return r as T[]
   const items = (r as { items?: unknown } | null | undefined)?.items
   if (Array.isArray(items)) return items as T[]
   return []
 }
 
-function toEmailMeta(raw: RawEmail): EmailMeta {
+const toEmailMeta = (raw: RawEmail): EmailMeta => {
   const sender = raw.from?.[0]
   const from: SenderInfo = {
     name: sender?.name ?? '',
@@ -60,7 +60,7 @@ function toEmailMeta(raw: RawEmail): EmailMeta {
   }
 }
 
-function toLabel(raw: RawLabel): Label {
+const toLabel = (raw: RawLabel): Label => {
   return {
     id: raw.id ?? '',
     name: raw.name ?? '',
@@ -71,9 +71,12 @@ function toLabel(raw: RawLabel): Label {
   }
 }
 
-export class McpMailProvider implements MailProvider {
-  readonly kind = 'mcp' as const
-  readonly caps: ProviderCapabilities = {
+export interface McpMailProvider extends MailProvider {
+  readonly kind: 'mcp'
+}
+
+export const createMcpMailProvider = (opts: McpHttpClientOptions): McpMailProvider => {
+  const caps: ProviderCapabilities = {
     // Hard server cap on search_email
     maxPageSize: 50,
     serverSideNotFrom: 'address-only',
@@ -81,34 +84,30 @@ export class McpMailProvider implements MailProvider {
     canSetLabelColor: false,
   }
 
-  private readonly client: McpHttpClient
+  const client = createMcpHttpClient(opts)
 
-  constructor(opts: McpHttpClientOptions) {
-    this.client = new McpHttpClient(opts)
+  const connect = async (): Promise<void> => {
+    await client.init()
   }
 
-  async connect(): Promise<void> {
-    await this.client.init()
-  }
-
-  async searchEmails(query: SearchQuery, page: PageRequest): Promise<SearchPage> {
-    const r = await this.client.callTool('search_email', {
+  const searchEmails = async (query: SearchQuery, page: PageRequest): Promise<SearchPage> => {
+    const r = await client.callTool('search_email', {
       query: buildSearchString(query),
-      limit: Math.min(page.limit, this.caps.maxPageSize),
+      limit: Math.min(page.limit, caps.maxPageSize),
       position: page.position,
     })
     return { items: toArray<RawEmail>(r).map(toEmailMeta), position: page.position }
   }
 
-  async getEmail(id: string): Promise<EmailMeta> {
-    const r = await this.client.callTool('read_email', { ids: [id] })
+  const getEmail = async (id: string): Promise<EmailMeta> => {
+    const r = await client.callTool('read_email', { ids: [id] })
     const first = toArray<RawEmail>(r)[0]
     if (!first) throw new TransportError(`email not found: ${id}`)
     return toEmailMeta(first)
   }
 
-  async listLabels(): Promise<Label[]> {
-    const r = await this.client.callTool('list_labels', {})
+  const listLabels = async (): Promise<Label[]> => {
+    const r = await client.callTool('list_labels', {})
     return toArray<RawLabel>(r).map(toLabel)
   }
 
@@ -118,8 +117,8 @@ export class McpMailProvider implements MailProvider {
    * Missing names therefore get a placeholder Label { id: '', name } instead of
    * a throw; the real label materializes on the first addLabels call.
    */
-  async ensureLabels(names: string[]): Promise<Map<string, Label>> {
-    const labels = await this.listLabels()
+  const ensureLabels = async (names: string[]): Promise<Map<string, Label>> => {
+    const labels = await listLabels()
     const out = new Map<string, Label>()
     for (const name of names) {
       const found = labels.find((l) => labelMatches(l, name))
@@ -128,13 +127,25 @@ export class McpMailProvider implements MailProvider {
     return out
   }
 
-  async addLabels(emailIds: string[], labelNames: string[]): Promise<void> {
-    await this.client.callTool('update_email', { ids: emailIds, addLabels: labelNames })
+  const addLabels = async (emailIds: string[], labelNames: string[]): Promise<void> => {
+    await client.callTool('update_email', { ids: emailIds, addLabels: labelNames })
   }
 
-  async archive(emailIds: string[]): Promise<void> {
+  const archive = async (emailIds: string[]): Promise<void> => {
     // The sanctioned "remove from Inbox, keep labels". NEVER use
     // update_email removeLabels: ['Inbox'] — the server rejects it.
-    await this.client.callTool('archive_email', { ids: emailIds })
+    await client.callTool('archive_email', { ids: emailIds })
+  }
+
+  return {
+    kind: 'mcp' as const,
+    caps,
+    connect,
+    searchEmails,
+    getEmail,
+    listLabels,
+    ensureLabels,
+    addLabels,
+    archive,
   }
 }

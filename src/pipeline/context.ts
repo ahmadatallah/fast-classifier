@@ -26,7 +26,7 @@ export interface PipelineContext {
  * mutator throws DryRunViolation, so a planning-pass bug physically cannot
  * mutate mail.
  */
-export function readProvider(ctx: PipelineContext): MailProvider {
+export const readProvider = (ctx: PipelineContext): MailProvider => {
   return ctx.dryRun ? readOnlyProvider(ctx.provider) : ctx.provider
 }
 
@@ -35,7 +35,7 @@ export function readProvider(ctx: PipelineContext): MailProvider {
  * collect passes never mutate, so they must never drain — 'scan' makes plan
  * and execute see the identical email set in dry and wet runs alike.
  */
-export function scanOptions(ctx: PipelineContext, seen?: Set<string>): PagerOptions {
+export const scanOptions = (ctx: PipelineContext, seen?: Set<string>): PagerOptions => {
   const opts: PagerOptions = {
     mode: 'scan',
     stallLimit: ctx.config.ops.stallLimit,
@@ -55,11 +55,11 @@ export interface RunMeta {
 }
 
 /** Stamps ISO timestamps around fn and injects the meta block into its report. */
-export async function withMeta<T extends object>(
+export const withMeta = async <T extends object>(
   command: string,
   ctx: PipelineContext,
   fn: () => Promise<T>,
-): Promise<T & { meta: RunMeta }> {
+): Promise<T & { meta: RunMeta }> => {
   const startedAt = new Date().toISOString()
   const body = await fn()
   const finishedAt = new Date().toISOString()

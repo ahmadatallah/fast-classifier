@@ -14,7 +14,7 @@ interface SenderEntry {
   count: number
 }
 
-export function bumpSender(map: Map<string, SenderEntry>, email: string, name: string): void {
+export const bumpSender = (map: Map<string, SenderEntry>, email: string, name: string): void => {
   let entry = map.get(email)
   if (entry === undefined) {
     entry = { name, count: 0 }
@@ -24,14 +24,14 @@ export function bumpSender(map: Map<string, SenderEntry>, email: string, name: s
   if (entry.name === '' && name !== '') entry.name = name
 }
 
-export function topSenderTally(map: Map<string, SenderEntry>, top?: number): SenderTally[] {
+export const topSenderTally = (map: Map<string, SenderEntry>, top?: number): SenderTally[] => {
   const sorted = [...map.entries()]
     .map(([email, { name, count }]) => ({ email, name, count }))
     .sort((a, b) => b.count - a.count || a.email.localeCompare(b.email))
   return top === undefined ? sorted : sorted.slice(0, top)
 }
 
-export function coveragePercent(matched: number, scanned: number): number {
+export const coveragePercent = (matched: number, scanned: number): number => {
   return scanned === 0 ? 0 : Math.round((matched / scanned) * 1000) / 10
 }
 
@@ -49,7 +49,7 @@ export interface PlanReport {
  * The iterate-rules-to-coverage flywheel: run, add rules for the top unmatched
  * senders, re-run — no mutations at any point.
  */
-export async function planClassification(ctx: PipelineContext): Promise<PlanReport> {
+export const planClassification = async (ctx: PipelineContext): Promise<PlanReport> => {
   return withMeta('plan', ctx, async () => {
     let scanned = 0
     let matched = 0

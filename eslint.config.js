@@ -11,6 +11,21 @@ export default tseslint.config(
     },
   },
   {
+    // house style: arrow-const functions and factories; classes only for Error subtypes
+    files: ['src/**', 'test/**'],
+    rules: {
+      'func-style': ['error', 'expression'],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "ClassDeclaration:not([superClass.name='Error'])",
+          message:
+            'prefer factory functions returning an interface; classes only for Error subtypes',
+        },
+      ],
+    },
+  },
+  {
     files: ['scripts/**/*.mjs'],
     languageOptions: {
       globals: { console: 'readonly', process: 'readonly' },

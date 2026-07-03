@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { TsvAudit } from '../../src/audit/index.js'
+import { openTsvAudit } from '../../src/audit/index.js'
 import { fileInbox } from '../../src/pipeline/index.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
 import type { ClassifierConfigInput } from '../../src/config/schema.js'
 import type { EmailMeta } from '../../src/types.js'
 import { expectMeta, inboxIds, makeCtx } from './helpers.js'
@@ -21,7 +21,7 @@ const FILE_CONFIG: ClassifierConfigInput = {
   keepList: ['boss@bank.example'],
 }
 
-function fileEmails(): EmailMeta[] {
+const fileEmails = (): EmailMeta[] => {
   return [
     makeEmail({ id: 'f1', from: { name: 'Bank', email: 'billing@bank.example' } }),
     makeEmail({ id: 'f2', from: { name: 'Bank', email: 'billing@bank.example' } }),
@@ -36,7 +36,7 @@ function fileEmails(): EmailMeta[] {
 
 describe('fileInbox', () => {
   test('mixed inbox files into per-category labels; unmatched and keep-listed stay', async () => {
-    const provider = new MemoryMailProvider(fileEmails())
+    const provider = createMemoryMailProvider(fileEmails())
     const { ctx } = makeCtx(provider, { config: FILE_CONFIG })
 
     const report = await fileInbox(ctx)
@@ -63,7 +63,7 @@ describe('fileInbox', () => {
   })
 
   test('falls back to the category name when no CategoryDef exists', async () => {
-    const provider = new MemoryMailProvider([
+    const provider = createMemoryMailProvider([
       makeEmail({ id: 'p1', from: { name: 'Me Elsewhere', email: 'me@home.example' } }),
     ])
     const { ctx } = makeCtx(provider, {
@@ -78,7 +78,7 @@ describe('fileInbox', () => {
   })
 
   test('categories filter restricts actions but not coverage', async () => {
-    const provider = new MemoryMailProvider(fileEmails())
+    const provider = createMemoryMailProvider(fileEmails())
     const { ctx } = makeCtx(provider, { config: FILE_CONFIG })
 
     const report = await fileInbox(ctx, { categories: ['Finance'] })
@@ -94,8 +94,8 @@ describe('fileInbox', () => {
     const dir = await mkdtemp(join(tmpdir(), 'fc-pipeline-'))
     const auditPath = join(dir, 'file-audit.tsv')
 
-    const audit = await TsvAudit.open(auditPath)
-    const provider = new MemoryMailProvider(fileEmails())
+    const audit = await openTsvAudit(auditPath)
+    const provider = createMemoryMailProvider(fileEmails())
     const { ctx } = makeCtx(provider, { config: FILE_CONFIG })
     const first = await fileInbox(ctx, { audit })
     expect(first.executed).toBe(5)
@@ -111,8 +111,8 @@ describe('fileInbox', () => {
 
     // resume after an "interruption": same mailbox state, same audit file —
     // processedIds pre-seed the pager's seen-set, so nothing is re-planned
-    const resumedAudit = await TsvAudit.open(auditPath)
-    const provider2 = new MemoryMailProvider(fileEmails())
+    const resumedAudit = await openTsvAudit(auditPath)
+    const provider2 = createMemoryMailProvider(fileEmails())
     const { ctx: ctx2 } = makeCtx(provider2, { config: FILE_CONFIG })
     const second = await fileInbox(ctx2, { audit: resumedAudit })
 
@@ -124,7 +124,7 @@ describe('fileInbox', () => {
   })
 
   test('ctx.max caps scanning and planning', async () => {
-    const provider = new MemoryMailProvider(fileEmails())
+    const provider = createMemoryMailProvider(fileEmails())
     const { ctx } = makeCtx(provider, { config: FILE_CONFIG, max: 4 })
 
     const report = await fileInbox(ctx)

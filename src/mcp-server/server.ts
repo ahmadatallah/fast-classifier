@@ -7,7 +7,7 @@ Mutating tools (sweep_newsletters, file_inbox, score_needs_action with apply, en
 If the server was started without execution enabled, dryRun is forced true regardless of arguments and results carry forcedDryRun: true.
 Nothing here can delete mail: archiving only removes the Inbox label.`
 
-export function createServer(deps: ServerDeps): McpServer {
+export const createServer = (deps: ServerDeps): McpServer => {
   const server = new McpServer(
     { name: 'fast-classifier', version: '0.1.0' },
     { instructions: INSTRUCTIONS },

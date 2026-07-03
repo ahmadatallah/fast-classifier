@@ -18,14 +18,16 @@ export const SESSION = {
   primaryAccounts: { 'urn:ietf:params:jmap:mail': 'acct-1' },
 }
 
-export function jmapResponse(...methodResponses: unknown[]): FakeResponse {
+export const jmapResponse = (...methodResponses: unknown[]): FakeResponse => {
   return { body: { methodResponses } }
 }
 
-export function fakeFetch(sequence: FakeResponse[]): {
+export const fakeFetch = (
+  sequence: FakeResponse[],
+): {
   fetch: typeof globalThis.fetch
   requests: RecordedRequest[]
-} {
+} => {
   const remaining = [...sequence]
   const requests: RecordedRequest[] = []
   const impl = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -56,9 +58,9 @@ export function fakeFetch(sequence: FakeResponse[]): {
 }
 
 /** Parsed methodCalls of a recorded JMAP POST body. */
-export function methodCallsOf(
+export const methodCallsOf = (
   request: RecordedRequest | undefined,
-): [string, Record<string, unknown>, string][] {
+): [string, Record<string, unknown>, string][] => {
   const body = request?.body as { methodCalls?: unknown } | undefined
   return Array.isArray(body?.methodCalls)
     ? (body.methodCalls as [string, Record<string, unknown>, string][])

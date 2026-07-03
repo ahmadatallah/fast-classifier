@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { McpHttpClient } from '../../../src/provider/mcp/http-client.js'
+import { createMcpHttpClient } from '../../../src/provider/mcp/http-client.js'
 import { RateLimitError, TransportError } from '../../../src/provider/types.js'
 
 interface RecordedRequest {
@@ -15,7 +15,7 @@ interface FakeResponse {
   headers?: Record<string, string>
 }
 
-function makeFakeFetch(responder: (req: RecordedRequest, index: number) => FakeResponse) {
+const makeFakeFetch = (responder: (req: RecordedRequest, index: number) => FakeResponse) => {
   const requests: RecordedRequest[] = []
   const fetchImpl = ((input: string | URL | Request, init?: RequestInit) => {
     const rawHeaders = (init?.headers ?? {}) as Record<string, string>
@@ -42,9 +42,9 @@ const sse = (json: string) => `event: message\ndata: ${json}\n\n`
 
 const TOKEN = 'fmu1-secret-token-abc123'
 
-function makeClient(responder: (req: RecordedRequest, index: number) => FakeResponse) {
+const makeClient = (responder: (req: RecordedRequest, index: number) => FakeResponse) => {
   const { fetchImpl, requests } = makeFakeFetch(responder)
-  const client = new McpHttpClient({ token: TOKEN, fetch: fetchImpl })
+  const client = createMcpHttpClient({ token: TOKEN, fetch: fetchImpl })
   return { client, requests }
 }
 

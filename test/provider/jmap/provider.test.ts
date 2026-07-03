@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { JmapMailProvider } from '../../../src/provider/jmap/provider.js'
+import { createJmapMailProvider } from '../../../src/provider/jmap/provider.js'
 import { RateLimitError, TransportError } from '../../../src/provider/types.js'
 import type { FakeResponse } from './fake-fetch.js'
 import { SESSION, fakeFetch, jmapResponse, methodCallsOf } from './fake-fetch.js'
@@ -11,18 +11,18 @@ const MAILBOXES = [
   { id: 'M-TRV', name: 'Travel', parentId: 'P-F', role: null, totalEmails: 5 },
 ]
 
-function mailboxGet(boxes: unknown[] = MAILBOXES): FakeResponse {
+const mailboxGet = (boxes: unknown[] = MAILBOXES): FakeResponse => {
   return jmapResponse(['Mailbox/get', { accountId: 'acct-1', list: boxes }, '0'])
 }
 
-async function connected(extra: FakeResponse[] = []) {
+const connected = async (extra: FakeResponse[] = []) => {
   const { fetch, requests } = fakeFetch([{ body: SESSION }, mailboxGet(), ...extra])
-  const provider = new JmapMailProvider({ token: 't', fetch })
+  const provider = createJmapMailProvider({ token: 't', fetch })
   await provider.connect()
   return { provider, requests }
 }
 
-async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
+const rejectionOf = async (promise: Promise<unknown>): Promise<unknown> => {
   return promise.then(
     () => {
       throw new Error('expected promise to reject')
@@ -33,7 +33,7 @@ async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
 
 describe('JmapMailProvider basics', () => {
   test('kind and capabilities', () => {
-    const provider = new JmapMailProvider({ token: 't', fetch: fakeFetch([]).fetch })
+    const provider = createJmapMailProvider({ token: 't', fetch: fakeFetch([]).fetch })
     expect(provider.kind).toBe('jmap')
     expect(provider.caps).toEqual({
       maxPageSize: 100,

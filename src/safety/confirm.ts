@@ -9,10 +9,10 @@ export const denyAll: ConfirmFn = () => Promise.resolve(false)
 /** Explicit opt-in (--yes). */
 export const allowAll: ConfirmFn = () => Promise.resolve(true)
 
-export function interactiveConfirm(
+export const interactiveConfirm = (
   input: NodeJS.ReadableStream = process.stdin,
   output: NodeJS.WritableStream = process.stdout,
-): ConfirmFn {
+): ConfirmFn => {
   return async (summary) => {
     const rl = createInterface({ input, output })
     try {
@@ -25,6 +25,6 @@ export function interactiveConfirm(
   }
 }
 
-export function needsConfirmation(plannedMutations: number, threshold = 100): boolean {
+export const needsConfirmation = (plannedMutations: number, threshold = 100): boolean => {
   return plannedMutations > threshold
 }

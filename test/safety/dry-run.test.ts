@@ -4,7 +4,7 @@ import { MUTATING_METHODS, type MailProvider } from '../../src/provider/types.js
 import type { EmailMeta, Label } from '../../src/types.js'
 
 // hand-rolled stub — deliberately not the memory provider, which lives in another module
-function makeStub(): { provider: MailProvider; calls: string[] } {
+const makeStub = (): { provider: MailProvider; calls: string[] } => {
   const calls: string[] = []
   const email: EmailMeta = {
     id: 'e1',

@@ -34,12 +34,12 @@ interface Gate {
   forcedDryRun: boolean
 }
 
-function gateDryRun(deps: ServerDeps, requested: boolean): Gate {
+const gateDryRun = (deps: ServerDeps, requested: boolean): Gate => {
   if (deps.allowExecute) return { dryRun: requested, forcedDryRun: false }
   return { dryRun: true, forcedDryRun: true }
 }
 
-function makeContext(deps: ServerDeps, dryRun: boolean, max?: number): PipelineContext {
+const makeContext = (deps: ServerDeps, dryRun: boolean, max?: number): PipelineContext => {
   return {
     provider: deps.provider,
     config: deps.config,
@@ -52,7 +52,7 @@ function makeContext(deps: ServerDeps, dryRun: boolean, max?: number): PipelineC
   }
 }
 
-function toolResult(report: object): CallToolResult {
+const toolResult = (report: object): CallToolResult => {
   // interfaces have no implicit index signature, so cast for structuredContent
   const structured = report as Record<string, unknown>
   return {
@@ -62,7 +62,7 @@ function toolResult(report: object): CallToolResult {
 }
 
 /** Failures become isError results with credentials scrubbed — never raw errors. */
-async function run(fn: () => Promise<CallToolResult>): Promise<CallToolResult> {
+const run = async (fn: () => Promise<CallToolResult>): Promise<CallToolResult> => {
   try {
     return await fn()
   } catch (err) {
@@ -82,7 +82,7 @@ const dryRunParam = z
     'plan only, write nothing (default true); forced to true unless the server was started with execution enabled',
   )
 
-export function registerTools(server: McpServer, deps: ServerDeps): void {
+export const registerTools = (server: McpServer, deps: ServerDeps): void => {
   server.registerTool(
     'classify_sender',
     {

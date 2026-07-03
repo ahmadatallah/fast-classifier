@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { paginate } from '../../src/provider/paging.js'
-import { MemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import { createMemoryMailProvider, makeEmail } from '../../src/provider/memory.js'
+import type { MemoryMailProvider } from '../../src/provider/memory.js'
 import type { EmailMeta } from '../../src/types.js'
 import type { PageRequest } from '../../src/provider/types.js'
 import type { SearchQuery } from '../../src/types.js'
 
-function recordingSleep() {
+const recordingSleep = () => {
   const calls: number[] = []
   const sleep = (ms: number): Promise<void> => {
     calls.push(ms)
@@ -14,11 +15,11 @@ function recordingSleep() {
   return { calls, sleep }
 }
 
-function inboxEmails(count: number): EmailMeta[] {
+const inboxEmails = (count: number): EmailMeta[] => {
   return Array.from({ length: count }, (_, i) => makeEmail({ id: `e${i}` }))
 }
 
-function spyRequests(provider: MemoryMailProvider): PageRequest[] {
+const spyRequests = (provider: MemoryMailProvider): PageRequest[] => {
   const requests: PageRequest[] = []
   const original = provider.searchEmails.bind(provider)
   provider.searchEmails = (query: SearchQuery, page: PageRequest) => {
@@ -28,7 +29,7 @@ function spyRequests(provider: MemoryMailProvider): PageRequest[] {
   return requests
 }
 
-async function inboxIds(provider: MemoryMailProvider): Promise<string[]> {
+const inboxIds = async (provider: MemoryMailProvider): Promise<string[]> => {
   const page = await provider.searchEmails({ inMailbox: 'inbox' }, { position: 0, limit: 1000 })
   return page.items.map((e) => e.id)
 }
@@ -36,7 +37,7 @@ async function inboxIds(provider: MemoryMailProvider): Promise<string[]> {
 describe('Pager drain mode (paging under mutation)', () => {
   test('archiving consumer with skips: every eligible email yielded exactly once', async () => {
     const emails = inboxEmails(120)
-    const provider = new MemoryMailProvider(emails)
+    const provider = createMemoryMailProvider(emails)
     const { calls, sleep } = recordingSleep()
     const pager = paginate(provider, { inMailbox: 'inbox' }, { pageLimit: 10, sleep })
 
@@ -70,7 +71,7 @@ describe('Pager drain mode (paging under mutation)', () => {
   })
 
   test('drain requests always use position = skippedCount', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(9))
+    const provider = createMemoryMailProvider(inboxEmails(9))
     const requests = spyRequests(provider)
     const { sleep } = recordingSleep()
     const pager = paginate(provider, { inMailbox: 'inbox' }, { pageLimit: 3, sleep })
@@ -88,7 +89,7 @@ describe('Pager drain mode (paging under mutation)', () => {
   })
 
   test('non-mutating consumer stalls out after stallLimit all-seen passes', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(5))
+    const provider = createMemoryMailProvider(inboxEmails(5))
     const { calls, sleep } = recordingSleep()
     const pager = paginate(
       provider,
@@ -109,7 +110,7 @@ describe('Pager drain mode (paging under mutation)', () => {
   })
 
   test('resume: pre-seeded seen ids are never yielded and eventually stall the drain', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(6))
+    const provider = createMemoryMailProvider(inboxEmails(6))
     const { sleep } = recordingSleep()
     const seen = new Set(['e1', 'e4']) // "already handled" per a previous run's audit log
     const pager = paginate(provider, { inMailbox: 'inbox' }, { seen, stallLimit: 2, sleep })
@@ -130,7 +131,7 @@ describe('Pager drain mode (paging under mutation)', () => {
 
 describe('Pager scan mode', () => {
   test('positions advance by items.length over a static mailbox', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(25))
+    const provider = createMemoryMailProvider(inboxEmails(25))
     const requests = spyRequests(provider)
     const pager = paginate(provider, { inMailbox: 'inbox' }, { mode: 'scan', pageLimit: 10 })
 
@@ -143,7 +144,7 @@ describe('Pager scan mode', () => {
   })
 
   test('max cap stops yielding mid-page', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(25))
+    const provider = createMemoryMailProvider(inboxEmails(25))
     const pager = paginate(
       provider,
       { inMailbox: 'inbox' },
@@ -159,7 +160,7 @@ describe('Pager scan mode', () => {
   })
 
   test('resume: pre-seeded seen ids are filtered out of a scan', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(10))
+    const provider = createMemoryMailProvider(inboxEmails(10))
     const seen = new Set(['e0', 'e3', 'e7'])
     const pager = paginate(provider, { inMailbox: 'inbox' }, { mode: 'scan', seen })
 
@@ -172,7 +173,7 @@ describe('Pager scan mode', () => {
 
 describe('Pager page limit clamping', () => {
   test('requested limit is clamped to caps.maxPageSize', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(7), { caps: { maxPageSize: 3 } })
+    const provider = createMemoryMailProvider(inboxEmails(7), { caps: { maxPageSize: 3 } })
     const requests = spyRequests(provider)
     const pager = paginate(provider, { inMailbox: 'inbox' }, { mode: 'scan', pageLimit: 50 })
 
@@ -185,7 +186,7 @@ describe('Pager page limit clamping', () => {
   })
 
   test('a pageLimit below the cap is used as-is', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(4), { caps: { maxPageSize: 3 } })
+    const provider = createMemoryMailProvider(inboxEmails(4), { caps: { maxPageSize: 3 } })
     const requests = spyRequests(provider)
     const pager = paginate(provider, { inMailbox: 'inbox' }, { mode: 'scan', pageLimit: 2 })
 
@@ -199,7 +200,7 @@ describe('Pager page limit clamping', () => {
 
 describe('mode contract: non-mutating (dry-run) consumers (review finding)', () => {
   test('scan mode yields EVERY page for a non-mutating consumer over a large inbox', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(120))
+    const provider = createMemoryMailProvider(inboxEmails(120))
     const { sleep } = recordingSleep()
     const pager = paginate(provider, { inMailbox: 'inbox' }, { mode: 'scan', pageLimit: 50, sleep })
     const ids: string[] = []
@@ -210,7 +211,7 @@ describe('mode contract: non-mutating (dry-run) consumers (review finding)', () 
   })
 
   test('drain mode with a non-mutating consumer stalls out and under-reports — the documented trap', async () => {
-    const provider = new MemoryMailProvider(inboxEmails(120))
+    const provider = createMemoryMailProvider(inboxEmails(120))
     const { sleep } = recordingSleep()
     const pager = paginate(
       provider,

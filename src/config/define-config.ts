@@ -9,6 +9,6 @@ import type { ClassifierConfigInput } from './schema.js'
  * export default defineConfig({ categories: [...], rules: [...] })
  * ```
  */
-export function defineConfig(config: ClassifierConfigInput): ClassifierConfigInput {
+export const defineConfig = (config: ClassifierConfigInput): ClassifierConfigInput => {
   return config
 }
