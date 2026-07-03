@@ -3,3 +3,4 @@ coverage/
 reference/
 node_modules/
 bun.lock
+docs/

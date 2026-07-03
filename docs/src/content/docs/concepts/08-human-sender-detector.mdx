@@ -1,0 +1,16 @@
+---
+title: The Human-Sender Detector
+description: The heuristic separating mail a human probably wrote from automated notices.
+sidebar:
+  order: 8
+---
+
+Lives in [`src/classify/human-sender.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/classify/human-sender.ts).
+
+## What
+
+"A human probably wrote this" = a spaced display name (`First Last`) AND an address that does not look automated (`no-reply`, `notifications@`, `billing@`, …) AND no big-brand token in address or name.
+
+## Origin
+
+The difference between archiving a receipt and archiving your accountant.

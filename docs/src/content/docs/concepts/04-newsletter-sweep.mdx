@@ -1,0 +1,20 @@
+---
+title: The Newsletter Sweep
+description: Full-text unsubscribe heuristic in, keep-list out, label + archive — with the keep-list enforced twice.
+sidebar:
+  order: 4
+---
+
+Lives in [`src/pipeline/sweep.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/pipeline/sweep.ts).
+
+## What
+
+Full-text `unsubscribe` heuristic in, keep-list out, label + archive. The keep-list is enforced **twice**: as a server-side `notFrom` filter _and_ re-checked client-side against every result.
+
+## Origin
+
+3,849 newsletters swept in one run, zero keepers lost.
+
+## Quirk it encodes
+
+Fastmail's `-from:` search operator takes literal addresses only — domain negation is silently ignored — so the client-side re-check is mandatory, not defensive. An empty keep-list logs a warning.

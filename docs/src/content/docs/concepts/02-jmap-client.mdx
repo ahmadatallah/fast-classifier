@@ -1,0 +1,22 @@
+---
+title: The JMAP Client
+description: Session discovery, batched methodCalls chained by back-reference, and bulk label creation with modal-parent inference.
+sidebar:
+  order: 2
+---
+
+Lives in [`src/provider/jmap`](https://github.com/ahmadatallah/fast-classifier/tree/main/src/provider/jmap).
+
+## What
+
+Session discovery (`apiUrl` + primary mail account), batched `methodCalls` (`Email/query` + `Email/get` chained by back-reference in one round trip), and bulk `Mailbox/set` label creation with client ids `c0, c1, …` plus modal-parent inference — new labels nest under whatever parent your existing labels use most.
+
+## Origin
+
+The session's label-creation probes (`reference/jmapcreate.mjs`, `colortest.mjs`).
+
+## Quirks it encodes
+
+- `created`/`notCreated` partial results are surfaced per label name.
+- Label _color_ is not settable over JMAP (the session tried).
+- Fastmail signals per-record throttling as a `SetError` of type `rateLimit` inside `notUpdated`/`notCreated` rather than HTTP 429 — the client converts it into the same backoff path.

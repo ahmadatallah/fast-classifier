@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Deterministic, rule-first email classifier for Fastmail: sweep newsletters, file everything into labels, flag what needs action — dry-run first, never deletes.",
   "type": "module",
+  "workspaces": [
+    "docs"
+  ],
   "license": "MIT",
   "author": "Ahmad Atallah",
   "repository": "github:ahmadatallah/fast-classifier",

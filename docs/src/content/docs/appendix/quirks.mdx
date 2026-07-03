@@ -1,0 +1,19 @@
+---
+title: Fastmail API Quirks
+description: Everything the origin session learned the hard way about Fastmail's JMAP and MCP APIs, all encoded in code and tests.
+---
+
+Everything the session learned the hard way, all encoded in code and tests:
+
+1. **50-item search cap (MCP).** `search_email` hard-caps at 50 per page; JMAP pages at 100. Expressed as `caps.maxPageSize`, clamped everywhere.
+2. **Array vs `{ items }`.** The MCP server answers either with a bare array or `{ items: [...] }` for the same tool. Adapters normalize both.
+3. **ISO-only `after:`.** `after:YYYY-MM-DD` is the only date operator Fastmail search reliably accepts.
+4. **`-from:` is literal-address-only.** Domain negation is silently ignored — keep-lists must be re-checked client-side (`caps.serverSideNotFrom: 'address-only'`).
+5. **Spaced values need quoting in the search DSL.** Unquoted, `in:Needs action` parses as `in:Needs` plus a free-text term `action` — silently wrong scope. The query builder double-quotes any value containing whitespace.
+6. **`addLabels` auto-creates labels (MCP).** There is no create-label tool, but `update_email` `addLabels` auto-creates missing labels. `ensureLabels` pre-flights stay as typo protection.
+7. **Archive ≠ `removeLabels: ['Inbox']`.** The server rejects removing Inbox via `removeLabels`; `archive_email` (MCP) / the paired inbox-null + archive-true patch (JMAP) is the sanctioned path.
+8. **Label color is not settable via JMAP.** The session tried; Fastmail ignores it.
+9. **Distinct tokens.** The JMAP API token and the MCP endpoint token are different credentials.
+10. **`rateLimit` SetError backoff.** Fastmail signals per-record throttling as a `SetError` of type `rateLimit` in `notUpdated`/`notCreated`, not HTTP 429. Both are converted into the same retry/backoff path.
+11. **MCP handshake details.** Capture-and-echo `mcp-session-id`, dual `Accept` header required, SSE `data:` frames even for single results, `structuredContent` unwrap with text-body fallback, rate limiting reported as a tool _error text_, not a status code.
+12. **JMAP sort tie-break limitation.** No total-order tiebreaker exists among JMAP's standard sort properties, so equal `receivedAt` values at a page boundary can reorder between calls; the pager's seen-set and audit-resume pattern recover anything stepped over.

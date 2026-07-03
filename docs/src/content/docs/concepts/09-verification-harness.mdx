@@ -1,0 +1,16 @@
+---
+title: The Verification Harness
+description: Post-run assertions over labels and inbox state — read-only by construction.
+sidebar:
+  order: 9
+---
+
+Lives in [`src/pipeline/verify.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/pipeline/verify.ts).
+
+## What
+
+Post-run assertions — label exists / has exactly N / at least N emails, keep-senders still present in the inbox, cleared-senders gone. Read-only by construction.
+
+## Origin
+
+Every session run ended by proving it did what the plan said.

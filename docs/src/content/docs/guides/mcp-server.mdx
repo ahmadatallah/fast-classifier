@@ -1,0 +1,47 @@
+---
+title: MCP Server
+description: Run fast-classifier-mcp on stdio, the 10 tools it exposes, and how writes are gated behind --allow-execute.
+---
+
+`fast-classifier-mcp` runs an MCP server on stdio: it loads the config from the working directory, connects the configured provider, and reads the matching token from the environment. Register it with an MCP client, e.g.:
+
+```sh
+claude mcp add fast-classifier \
+  --env FASTMAIL_API_TOKEN=your-jmap-token \
+  -- fast-classifier-mcp
+```
+
+Human-facing output goes to stderr; stdout carries the protocol.
+
+## The 10 tools
+
+| Tool                   | What it does                                                                                                         | Kind      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- | --------- |
+| `classify_sender`      | pure rule-engine lookup: which category would mail from this sender file into? No mailbox access                     | read-only |
+| `analyze_inbox`        | read-only recon: who fills the inbox, tallied by sender and by root domain                                           | read-only |
+| `plan_classification`  | coverage report: how the current rules would classify the inbox, plus top unmatched senders to write rules for       | read-only |
+| `sweep_newsletters`    | label and archive bulk mail matching the sweep heuristic, keep-list excluded; accepts a `targetLabel` override       | mutating  |
+| `file_inbox`           | classify inbox mail by the configured rules, label per category, then archive; accepts a `categories` filter         | mutating  |
+| `score_needs_action`   | score the recent inbox window for mail likely needing a human response; `apply: true` tags candidates, never archives | mutating  |
+| `list_labels`          | all labels/mailboxes with paths and message totals                                                                   | read-only |
+| `ensure_labels`        | idempotent bulk create of missing labels (names may be `'Parent/Child'` paths)                                       | mutating  |
+| `verify_run`           | post-run assertions: label totals plus per-sender inbox contains/cleared probes                                      | read-only |
+| `get_effective_config` | the fully-resolved classifier config (defaults applied), with credential-looking strings redacted                    | read-only |
+
+Mutating tools accept `dryRun` (default `true`) and `max` (cap on emails scanned this run).
+
+## The write gate
+
+Mutating tools default to `dryRun: true` — the intended agent loop is call dry, inspect the report, then pass `dryRun: false`.
+
+Unless the server was started with `--allow-execute` (or `FAST_CLASSIFIER_ALLOW_WRITES=1`), `dryRun` is **forced true regardless of arguments** and results carry `forcedDryRun: true` — so agents can tell the difference between "planned" and "cannot execute". Once execution is enabled, honestly-executed results carry `forcedDryRun: false`.
+
+## Annotations
+
+Every tool declares MCP annotations so clients can reason about it:
+
+- Read-only tools: `readOnlyHint: true, destructiveHint: false`.
+- Mutating tools: `readOnlyHint: false, destructiveHint: false` — nothing destroys: the `MailProvider` interface has no delete methods, and archive only drops the Inbox label (see the [safety model](../../safety/)).
+- `ensure_labels` additionally declares `idempotentHint: true`.
+
+Failures become `isError` results with credentials scrubbed — never raw errors.

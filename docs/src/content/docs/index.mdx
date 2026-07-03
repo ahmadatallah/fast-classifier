@@ -1,0 +1,39 @@
+---
+title: fast-classifier
+description: Deterministic, rule-first email classifier for Fastmail — dry-run first, never deletes.
+template: splash
+hero:
+  tagline: 'Deterministic, rule-first email classifier for Fastmail: sweep newsletters, file everything, flag what needs action — dry-run first, never deletes.'
+  actions:
+    - text: Quickstart
+      link: quickstart/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/ahmadatallah/fast-classifier
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+## Born from a real inbox
+
+fast-classifier was born from a live session that organized a real 6,551-email inbox: **3,849 newsletters swept in one run**, **5,573 emails filed into 14 labels**, and **87% rule coverage** reached by iterating recon reports instead of training anything. The one-off scripts from that session are preserved read-only in [`reference/`](https://github.com/ahmadatallah/fast-classifier/tree/main/reference); this project is those scripts hardened into a typed, tested library with a CLI and an MCP server. Every [core concept](concepts/01-mcp-handshake/) shipped from that session.
+
+<CardGrid stagger>
+  <Card title="CLI" icon="rocket">
+    The canonical loop: `analyze` → `plan` → iterate rules → `sweep --execute` → `file --execute` →
+    `needs-action` → `verify`. Every mutating command is dry-run until you pass `--execute`.
+    [CLI reference →](guides/cli/)
+  </Card>
+  <Card title="Library" icon="seti:typescript">
+    A typed, tested TypeScript library: pure rule engine, pipelines, and pluggable JMAP/MCP
+    transports behind one `MailProvider` interface — with an in-memory provider for tests.
+    [API reference →](api/overview/)
+  </Card>
+  <Card title="MCP server" icon="puzzle">
+    `fast-classifier-mcp` exposes 10 tools over stdio for agents, with writes gated behind
+    `--allow-execute` and forced dry-runs marked `forcedDryRun: true`.
+    [MCP server guide →](guides/mcp-server/)
+  </Card>
+</CardGrid>

@@ -224,6 +224,18 @@ bun run build       # emits dist/ for plain Node (>= 20)
 
 `reference/` holds the origin session's scripts — read-only ground truth for behavior questions; never edit them.
 
+### Documentation site
+
+`docs/` is an [Astro Starlight](https://starlight.astro.build) site: the narrative guides plus an API reference generated straight from the source by [starlight-typedoc](https://starlight-typedoc.vercel.app) — one theme, one sidebar, one search index.
+
+```sh
+bun install                       # once, at the repo root (bun workspaces)
+cd docs && bunx --bun astro dev   # live-reloading docs at localhost:4321
+cd docs && bunx --bun astro build # static site in docs/dist/
+```
+
+CI builds the site on every push (`.github/workflows/docs.yml`); deployment to GitHub Pages is parked until the repo is public — the workflow file documents the one-step re-enable.
+
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - License: [MIT](LICENSE)

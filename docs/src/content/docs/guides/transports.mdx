@@ -1,0 +1,21 @@
+---
+title: Transports
+description: JMAP vs Fastmail's official MCP endpoint — capabilities, page sizes, and which env var each needs.
+---
+
+fast-classifier speaks two transports to Fastmail behind one `MailProvider` interface. Pick with `-p jmap` / `-p mcp` on the CLI or `provider.type` in config.
+
+|                    | JMAP (default)                                      | MCP                                                      |
+| ------------------ | --------------------------------------------------- | -------------------------------------------------------- |
+| Token env var      | `FASTMAIL_API_TOKEN`                                | `FASTMAIL_MCP_TOKEN`                                     |
+| Endpoint           | `api.fastmail.com/jmap/session`                     | `api.fastmail.com/mcp` (official)                        |
+| Page size          | 100                                                 | 50 — server hard cap                                     |
+| Keep-list negation | full server-side `NOT` filter                       | `-from:` literal addresses only; re-checked client-side  |
+| Label creation     | explicit `Mailbox/set` (nested paths, modal parent) | no create tool — `addLabels` auto-creates missing labels |
+| Search totals      | real totals (`calculateTotal`)                      | none (position-only paging)                              |
+
+:::caution[Distinct credentials]
+The tokens are distinct credentials — a JMAP API token does not work against the MCP endpoint and vice versa. Both come from Fastmail under **Settings → Privacy & Security → Integrations → API tokens**; see the [Quickstart](../../quickstart/).
+:::
+
+The transport differences are handled automatically — the page-size caps, keep-list re-checks, and label-creation strategies are all encoded in the providers. The full list of server behaviors each transport encodes is in the [Fastmail API quirks appendix](../../appendix/quirks/), and the transport internals are documented as core concepts: [the MCP handshake](../../concepts/01-mcp-handshake/) and [the JMAP client](../../concepts/02-jmap-client/).

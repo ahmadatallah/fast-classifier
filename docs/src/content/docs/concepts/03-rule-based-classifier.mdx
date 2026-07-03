@@ -1,0 +1,20 @@
+---
+title: The Rule-Based Classifier
+description: A pure function from sender to category with 5-tier precedence. No state, no network, no ML.
+sidebar:
+  order: 3
+---
+
+Lives in [`src/classify`](https://github.com/ahmadatallah/fast-classifier/tree/main/src/classify).
+
+## What
+
+A pure function `(sender) -> category | null` with 5-tier precedence: exact sender → registrable root domain → display-name rules on relay domains → relay account/personal fallbacks → your own domains. No state, no network, no ML.
+
+## Origin
+
+87% of 6,551 emails filed with zero machine learning — just rules iterated against recon reports.
+
+## Quirk it encodes
+
+The session's naive `slice(-2)` domain split called `amazon.co.uk` "`co.uk`" — fixed with public-suffix-aware [tldts](https://github.com/remusao/tldts) and locked in by regression tests.

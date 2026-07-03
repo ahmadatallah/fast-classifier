@@ -1,0 +1,16 @@
+---
+title: Recon & Plan
+description: Read-only aggregation, coverage %, and the top-unmatched-senders flywheel that reached 87%.
+sidebar:
+  order: 7
+---
+
+Lives in [`src/pipeline/analyze.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/pipeline/analyze.ts) and [`src/pipeline/plan.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/pipeline/plan.ts).
+
+## What
+
+Read-only aggregation by sender and public-suffix-aware root domain, coverage %, and the top-unmatched-senders list.
+
+## Origin
+
+The flywheel that reached 87% — run `plan`, add rules for the top unmatched senders, run `plan` again. No mutations at any point.

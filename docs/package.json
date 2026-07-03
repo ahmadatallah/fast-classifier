@@ -1,0 +1,17 @@
+{
+  "name": "fast-classifier-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.2",
+    "astro": "^7.0.6",
+    "starlight-typedoc": "^0.23.0",
+    "typedoc": "~0.28.19",
+    "typedoc-plugin-markdown": "^4.12.0"
+  }
+}

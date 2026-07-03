@@ -1,0 +1,24 @@
+---
+title: The Inbox Filer
+description: The shared read loop with a seen-set, stall detection, and drain vs scan cursor modes.
+sidebar:
+  order: 5
+---
+
+Lives in [`src/pipeline/file.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/pipeline/file.ts) + [`src/provider/paging.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/provider/paging.ts).
+
+## What
+
+The shared read loop with a seen-set (nothing yielded twice), stall detection (consecutive all-seen pages → backoff, then stop), and careful cursor arithmetic split into two modes — `drain` (cursor advances only past items deliberately skipped) and `scan` (plain offset paging for read-only passes).
+
+## Origin
+
+The session's hard-won answer to a trap: offset paging collapses when you mutate the very result you are paging — archiving shifts the window and the search re-serves already-processed ids.
+
+## Shipped refinement
+
+Pipelines _collect_ the full plan in `scan` mode, then execute — so dry-run and `--execute` see the identical plan.
+
+## Quirks it encodes
+
+The 50-item MCP search cap, and servers that answer either with a bare array or `{ items: [...] }`.

@@ -1,0 +1,52 @@
+---
+title: Configuration
+description: defineConfig, the config discovery order, the JSON alternative, and every top-level field.
+---
+
+## A minimal config
+
+```ts
+// fast-classifier.config.ts
+import { defineConfig } from 'fast-classifier/config'
+
+export default defineConfig({
+  categories: [{ name: 'Dev', label: 'Inbox/Dev' }],
+  rules: [{ kind: 'domain', domain: 'github.com', category: 'Dev' }],
+  keepList: ['important@example.com'],
+  sweep: { targetLabel: 'Promotion' },
+  needsAction: { label: 'Needs action', windowDays: 60 },
+})
+```
+
+`fast-classifier init` writes a fuller starter config with a `domains()` helper for bulk domain rules.
+
+## Discovery order
+
+Explicit `--config <path>` → `fast-classifier.config.ts` → `.mjs` → `.js` → `.json` in the working directory → built-in defaults.
+
+:::danger[No credentials in config files]
+Config files must never contain credentials — the loader rejects secret-shaped keys and token-shaped values. Export `FASTMAIL_API_TOKEN` (JMAP) or `FASTMAIL_MCP_TOKEN` (MCP) in your environment instead.
+:::
+
+## JSON works identically
+
+JSON configs work identically to TypeScript ones — rule patterns are plain strings in every format (the schema compiles them to case-insensitive regexes), so nothing is lost in translation.
+
+## Fields
+
+| Field         | What it configures                                                                                                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider`    | mail transport: `type: 'jmap' \| 'mcp'` plus an optional `baseUrl` endpoint override (testing / self-hosted JMAP)                                                                                |
+| `categories`  | `{ name, label, description? }` — the category names rules reference, and the Fastmail label each files into (labels may be nested paths like `'Inbox/Finance'`)                                 |
+| `rules`       | the classifier rules: `{ kind: 'sender', address }` (exact address, wins first), `{ kind: 'domain', domain }` (registrable root domain), or `{ kind: 'name', pattern, onlyForDomains? }` (display-name regex, by default only consulted for relay domains) |
+| `keepList`    | exact sender addresses that must never be swept, even when their mail says "unsubscribe" — enforced twice, server-side and client-side                                                            |
+| `sweep`       | `targetLabel` (default `'Promotion'`), `textHeuristic` (default `'unsubscribe'`), optional `after` ISO date                                                                                        |
+| `needsAction` | `label`, `threshold` (default 3), `highKeywords` / `exclusionKeywords` (arrays of `{ phrase, weight }`), `unreadBonus`, `personalNeedsReplyBonus`, `windowDays` (default 60)                        |
+| `detection`   | relay/account/personal-provider domain lists, the user's own `personalDomains`, and the regex sources behind the [human-sender detector](../../concepts/08-human-sender-detector/)                     |
+| `ops`         | batching and pacing: `batchSize` (≤ 50), `batchDelayMs`, `stallBackoffMs`, `stallLimit`, `progressEvery`, optional `maxItems` — see [Ops Conventions](../../concepts/10-ops-conventions/)              |
+
+The config is validated with zod: rules must reference declared categories, duplicate category/domain/sender entries are rejected, and every regex source must compile — a bad pattern fails at load time with a pointed error, never as a raw `SyntaxError` mid-run.
+
+## Examples
+
+See [`examples/`](https://github.com/ahmadatallah/fast-classifier/tree/main/examples) in the repo for the full German-power-user config that reached 87% coverage (14 categories, 81 domain rules), its JSON twin, and minimal sweep-only / needs-action-only / MCP-transport variants.

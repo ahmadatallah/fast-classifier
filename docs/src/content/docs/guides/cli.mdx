@@ -1,0 +1,53 @@
+---
+title: CLI Reference
+description: Every fast-classifier command and global flag, plus reports, audit logs, and exit codes.
+---
+
+```
+fast-classifier [global options] <command>
+```
+
+## Global options
+
+Accepted before or after the subcommand — both `fast-classifier --execute sweep` and `fast-classifier sweep --execute` parse.
+
+| Flag                    | Meaning                                                             |
+| ----------------------- | ------------------------------------------------------------------- |
+| `-c, --config <path>`   | path to `fast-classifier.config.{ts,mjs,js,json}`                   |
+| `-p, --provider <type>` | mail transport: `jmap` or `mcp` (default: from config)              |
+| `--execute`             | apply changes — mutating commands are dry-run by default            |
+| `--max <n>`             | cap on emails scanned per run (a positive integer)                  |
+| `--yes`                 | skip confirmation prompts for large mutation batches                |
+| `--json`                | print the full report JSON to stdout instead of a summary           |
+| `--report-dir <dir>`    | directory for reports and audit logs (default `./.fast-classifier`) |
+
+## Commands
+
+| Command                                                                      | Description                                                                                                                                                                      |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyze`                                                                    | read-only recon: who fills the inbox, by sender and root domain                                                                                                                  |
+| `plan`                                                                       | classify without touching anything: coverage + unmatched senders                                                                                                                 |
+| `sweep`                                                                      | label + archive bulk mail (keep-list wins; dry-run by default); audits to `sweep.log.tsv`                                                                                        |
+| `file`                                                                       | file classified mail into per-category labels (dry-run by default); audits to `file.log.tsv`                                                                                     |
+| `needs-action [--apply]`                                                     | score the recent window for mail needing a human response; `--apply` tags candidates with the needs-action label (never archives) — tagging requires `--apply` _and_ `--execute` |
+| `labels list`                                                                | list labels with email totals                                                                                                                                                    |
+| `labels ensure <names...>`                                                   | create the given labels if missing, nested as `'Parent/Child'` (dry-run by default)                                                                                              |
+| `verify [--contains <addrs...>] [--cleared <addrs...>] [--label <specs...>]` | post-run assertions; label specs are `'Name'` (exists), `'Name=N'` (exactly N), `'Name>=N'` (at least N)                                                                         |
+| `init [dir]`                                                                 | write a starter `fast-classifier.config.ts` (refuses to overwrite)                                                                                                               |
+| `mcp`                                                                        | run the MCP server on stdio — prefer the standalone `fast-classifier-mcp` bin                                                                                                    |
+
+### `verify` in detail
+
+- `--contains <addrs...>` — senders that must still have inbox mail
+- `--cleared <addrs...>` — senders that must have no inbox mail left
+- `--label <specs...>` — label expectations: `'Inbox/Dev'` (exists), `'Inbox/Dev=14'` (exactly 14 emails), `'Inbox/Dev>=1'` (at least 1)
+
+```sh
+fast-classifier verify --cleared newsletter@example.com --label 'Inbox/Dev>=1'
+```
+
+## Reports and exit codes
+
+Every command writes `<command>-report.json` (credentials redacted) into the report dir and echoes the path on stderr. Dry runs print a `DRY RUN — no changes will be made (pass --execute to apply)` banner on stderr before the run.
+
+Exit code 1 on errors, on failed `verify` checks, and when a `sweep`/`file` run is aborted by a declined confirmation (non-interactive runs planning more than 100 mutations refuse the batch unless `--yes` is passed).

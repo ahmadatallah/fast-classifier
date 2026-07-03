@@ -1,0 +1,40 @@
+---
+title: Safety Model
+description: Dry-run by default, a never-delete guarantee enforced in three layers, confirmation gates, audit logs, and env-only tokens.
+sidebar:
+  order: 2
+---
+
+Read this before installing — it is the point of the project.
+
+## Dry-run by default
+
+Every mutating command plans and reports but writes nothing until you pass `--execute`. Dry runs print a `DRY RUN — no changes will be made (pass --execute to apply)` banner, and in dry-run mode the provider is wrapped in a proxy whose mutating methods _throw_ — a planning-pass bug physically cannot mutate mail.
+
+## The never-delete guarantee
+
+Three layers, from interface to wire:
+
+1. The `MailProvider` interface has **no delete methods and never will**.
+2. The JMAP layer additionally runtime-asserts that no request carries a `destroy` key before any bytes leave the process.
+3. `archive()` only removes the Inbox label (and adds Archive) — the worst any bug can do is mislabel or archive mail, never lose it.
+
+## Confirmation above 100 mutations
+
+A run planning more than 100 mutations prompts for confirmation. `--yes` skips the prompt; a non-interactive run without `--yes` refuses the whole batch (`sweep`/`file` then exit 1).
+
+## The `--max` cap
+
+Every scanning command accepts a hard cap on emails scanned per run.
+
+## Append-only TSV audit + resume
+
+`sweep` and `file` log every mutated email id to an append-only TSV _before_ the next batch runs, so an interrupted run resumes without duplicating work.
+
+## Tokens live in the environment only
+
+The config loader rejects secret-shaped keys and token-shaped values in config files, and errors/reports pass through a redaction chokepoint.
+
+## MCP-server writes are gated
+
+The MCP server forces every tool into dry-run unless started with `--allow-execute` (or `FAST_CLASSIFIER_ALLOW_WRITES=1`), and marks forced results with `forcedDryRun: true`. See the [MCP server guide](../guides/mcp-server/) for the intended agent loop.

@@ -1,0 +1,45 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'tsconfig.build.json'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # root install: bun workspaces hoist docs deps AND let TypeDoc resolve
+      # the library's own dependencies
+      - run: bun install --frozen-lockfile
+      - run: bunx --bun astro build
+        working-directory: docs
+
+# DEPLOYMENT (parked): GitHub Pages needs a public repo (or a paid plan).
+# When ready — `gh api -X POST repos/ahmadatallah/fast-classifier/pages -f build_type=workflow`,
+# then add to the top level:
+#   permissions: { contents: read, pages: write, id-token: write }
+#   concurrency: { group: pages, cancel-in-progress: false }
+# append to the build job:
+#   - uses: actions/configure-pages@v6
+#   - uses: actions/upload-pages-artifact@v5
+#     with: { path: docs/dist }
+# and add:
+#   deploy:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+#     steps:
+#       - id: deployment
+#         uses: actions/deploy-pages@v5

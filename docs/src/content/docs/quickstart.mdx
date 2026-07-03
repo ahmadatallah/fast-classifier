@@ -1,0 +1,98 @@
+---
+title: Quickstart
+description: Install fast-classifier from a clone, get a scoped Fastmail token, and run the canonical loop — recon, iterate rules, then execute.
+sidebar:
+  order: 1
+---
+
+import { Steps } from '@astrojs/starlight/components'
+
+Before anything else, read the [safety model](../safety/) — it is the point of the project. The short version: every mutating command is dry-run until you pass `--execute`, and nothing can ever delete mail.
+
+## Install
+
+Not yet on npm — install from a clone (bun ≥ 1.1):
+
+```sh
+git clone https://github.com/ahmadatallah/fast-classifier.git
+cd fast-classifier
+bun install
+bun run build && bun link   # puts `fast-classifier` and `fast-classifier-mcp` on your PATH
+```
+
+(Or skip building and run straight from source: `bun src/cli/main.ts <command>`.)
+
+## Get a scoped Fastmail token
+
+In Fastmail: **Settings → Privacy & Security → Integrations → API tokens**. Scope it to **Mail read + write only** — no contacts, calendars, files, or sending. Use a read-only token if you only run `analyze`/`plan`.
+
+:::caution[Two transports, two tokens]
+The JMAP API token and the MCP endpoint token are **different credentials** — one does not work against the other's endpoint. See [Transports](../guides/transports/) for the comparison.
+:::
+
+Tokens live in the environment only — the config loader rejects credentials in config files:
+
+```sh
+cp .env.example .env        # bun loads .env automatically; otherwise export in your shell
+export FASTMAIL_API_TOKEN=...   # JMAP transport (the default)
+export FASTMAIL_MCP_TOKEN=...   # MCP transport (-p mcp)
+```
+
+## The canonical loop
+
+Recon, iterate rules, then execute:
+
+<Steps>
+
+1. Write a starter config:
+
+   ```sh
+   fast-classifier init                # writes a starter fast-classifier.config.ts
+   ```
+
+2. Read-only recon — who fills the inbox:
+
+   ```sh
+   fast-classifier analyze             # top senders and root domains
+   ```
+
+3. Check coverage:
+
+   ```sh
+   fast-classifier plan                # coverage % + top unmatched senders
+   ```
+
+4. Edit `fast-classifier.config.ts` — add rules for the top unmatched senders — then run `plan` again. Iterate until coverage is where you want it. This flywheel is how the origin session reached 87% coverage without training anything.
+
+5. Sweep bulk mail — dry run first, inspect the report, then execute:
+
+   ```sh
+   fast-classifier sweep               # dry run — inspect the report
+   fast-classifier sweep --execute     # label + archive bulk mail
+   ```
+
+6. File everything the rules match:
+
+   ```sh
+   fast-classifier file --execute
+   ```
+
+7. Surface what needs a human reply:
+
+   ```sh
+   fast-classifier needs-action
+   ```
+
+8. Prove the run did what the plan said:
+
+   ```sh
+   fast-classifier verify --cleared newsletter@example.com --label 'Inbox/Dev>=1'
+   ```
+
+</Steps>
+
+## Next steps
+
+- [Configuration](../guides/configuration/) — categories, rules, keep-list, and the config discovery order.
+- [CLI reference](../guides/cli/) — every command and flag.
+- [MCP server](../guides/mcp-server/) — drive the same pipelines from an agent.

@@ -1,0 +1,16 @@
+---
+title: Ops Conventions
+description: Batching, pacing, backoff, and the append-only audit that survived 9,400+ mutations.
+sidebar:
+  order: 10
+---
+
+Lives in [`src/provider/batching.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/provider/batching.ts) + [`src/audit`](https://github.com/ahmadatallah/fast-classifier/tree/main/src/audit).
+
+## What
+
+Mutations chunked at ≤ 50 per batch, 220 ms pacing between chunks, rate-limit retries with growing backoff, 1200 ms stall backoff in the pager, progress logged every 5 chunks, append-only TSV audit, JSON report per command.
+
+## Origin
+
+9,400+ mutations without a rate-limit death spiral.

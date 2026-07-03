@@ -1,0 +1,20 @@
+---
+title: The Needs-Action Scorer
+description: A weighted, bilingual EN+DE keyword score over subject, snippet, and sender name.
+sidebar:
+  order: 6
+---
+
+Lives in [`src/classify/needs-action.ts`](https://github.com/ahmadatallah/fast-classifier/blob/main/src/classify/needs-action.ts).
+
+## What
+
+A weighted keyword score over subject + snippet + sender name: 63 EN+DE phrases at **+3** ("action required", "deadline", "Frist", "Mahnung", …), 22 receipt/shipping/newsletter exclusions at **−2**, unread **+1**, personal-sender-awaiting-reply **+4**, threshold **3**, over a 60-day window.
+
+## Origin
+
+Surfaced the handful of emails needing a human among thousands.
+
+## Quirk it encodes
+
+Bilingual by necessity — a German inbox scores "Frist" exactly like "deadline".
