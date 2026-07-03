@@ -196,3 +196,32 @@ describe('Pager page limit clamping', () => {
     expect(requests.every((r) => r.limit === 2)).toBe(true)
   })
 })
+
+describe('mode contract: non-mutating (dry-run) consumers (review finding)', () => {
+  test('scan mode yields EVERY page for a non-mutating consumer over a large inbox', async () => {
+    const provider = new MemoryMailProvider(inboxEmails(120))
+    const { sleep } = recordingSleep()
+    const pager = paginate(provider, { inMailbox: 'inbox' }, { mode: 'scan', pageLimit: 50, sleep })
+    const ids: string[] = []
+    for await (const email of pager) ids.push(email.id) // reads only — a dry-run planning pass
+    expect(ids).toHaveLength(120)
+    expect(new Set(ids).size).toBe(120)
+    expect(pager.stats.stalledOut).toBe(false)
+  })
+
+  test('drain mode with a non-mutating consumer stalls out and under-reports — the documented trap', async () => {
+    const provider = new MemoryMailProvider(inboxEmails(120))
+    const { sleep } = recordingSleep()
+    const pager = paginate(
+      provider,
+      { inMailbox: 'inbox' },
+      { mode: 'drain', pageLimit: 50, sleep },
+    )
+    const ids: string[] = []
+    for await (const email of pager) ids.push(email.id)
+    // page 1 only, then stall-out: this is WHY pipelines must derive
+    // mode from their dryRun flag
+    expect(ids).toHaveLength(50)
+    expect(pager.stats.stalledOut).toBe(true)
+  })
+})

@@ -13,7 +13,7 @@ const DEFAULT_SESSION_URL = 'https://api.fastmail.com/jmap/session'
 const USING = ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail']
 
 /** Top-level args keys that would destroy mail. Checked on every request. */
-const FORBIDDEN_ARG_KEYS = ['destroy', 'onDestroyRemoveEmails'] as const
+const FORBIDDEN_ARG_KEYS = ['destroy', 'onDestroyRemoveEmails', 'onSuccessDestroyOriginal'] as const
 
 /**
  * Thin JMAP-over-fetch client (hand-rolled on purpose). Owns session

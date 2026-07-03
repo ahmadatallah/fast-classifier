@@ -134,9 +134,14 @@ export class JmapMailProvider implements MailProvider {
         {
           accountId,
           filter,
+          // KNOWN LIMITATION: no total-order tiebreaker exists among JMAP's
+          // standard sort properties, so equal receivedAt values at a page
+          // boundary can reorder between calls; the Pager's audit-resume
+          // pattern recovers anything stepped over.
           sort: [{ property: 'receivedAt', isAscending: false }],
           position: page.position,
           limit: page.limit,
+          calculateTotal: true,
         },
         'q0',
       ],

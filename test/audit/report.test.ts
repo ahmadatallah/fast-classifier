@@ -1,3 +1,4 @@
+// hygiene-allow-token: this test plants FAKE fmu1- tokens to prove redaction works
 import { describe, test, expect } from 'bun:test'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

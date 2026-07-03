@@ -34,6 +34,7 @@ export class McpHttpClient {
   private readonly clientInfo: { name: string; version: string }
   private sessionId: string | null = null
   private initialized = false
+  private negotiated = false
 
   constructor(opts: McpHttpClientOptions) {
     this.token = opts.token
@@ -49,6 +50,7 @@ export class McpHttpClient {
       capabilities: {},
       clientInfo: this.clientInfo,
     })
+    this.negotiated = true
     await this.notify('notifications/initialized', {})
     this.initialized = true
   }
@@ -74,7 +76,9 @@ export class McpHttpClient {
     }
     const envelope = JSON.parse(line) as { error?: unknown; result?: unknown }
     if (envelope.error) {
-      throw new TransportError(`MCP error: ${JSON.stringify(envelope.error)}`, envelope.error)
+      // Error payloads can echo request contents — redact before surfacing
+      const safe = this.redact(JSON.stringify(envelope.error))
+      throw new TransportError(`MCP error: ${safe}`, safeParse(safe))
     }
     return envelope.result
   }
@@ -88,12 +92,14 @@ export class McpHttpClient {
     const r = (await this.rpc('tools/call', { name, arguments: args })) as ToolCallResult | null
     if (r && r.isError) {
       const et = (r.content ?? []).find((c) => c.type === 'text')
-      const text = et?.text ?? JSON.stringify(r)
+      const text = this.redact(et?.text ?? JSON.stringify(r))
       // The server reports rate limiting as a tool error, not HTTP 429
       if (/rate.?limit/i.test(text)) throw new RateLimitError(text)
       throw new TransportError('TOOL_ERROR: ' + text)
     }
-    if (r && r.structuredContent !== undefined) return r.structuredContent as T
+    // Truthiness on purpose (reference-faithful): a present-but-null
+    // structuredContent must fall through to the text body.
+    if (r && r.structuredContent) return r.structuredContent as T
     const t = (r?.content ?? []).find((c) => c.type === 'text')
     if (!t || t.text === undefined) return r as T
     try {
@@ -112,6 +118,9 @@ export class McpHttpClient {
     }
     // Session dance: echo the server-issued session id on every later call
     if (this.sessionId) headers['mcp-session-id'] = this.sessionId
+    // Streamable HTTP spec (2025-06-18): declare the negotiated protocol
+    // version on every post-initialize request
+    if (this.negotiated) headers['MCP-Protocol-Version'] = MCP_PROTOCOL_VERSION
     const res = await this.fetchImpl(this.endpoint, {
       method: 'POST',
       headers,
@@ -138,5 +147,13 @@ export class McpHttpClient {
   // appear in a thrown message.
   private redact(s: string): string {
     return s.split(this.token).join('[redacted]')
+  }
+}
+
+function safeParse(json: string): unknown {
+  try {
+    return JSON.parse(json)
+  } catch {
+    return json
   }
 }

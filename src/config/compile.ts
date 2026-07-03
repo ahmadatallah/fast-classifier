@@ -34,6 +34,7 @@ export interface CompiledRules {
   automatedRe: RegExp
   brandRe: RegExp
   personalProviderRe: RegExp
+  personalReplyExclusionRe: RegExp
   categories: Map<string, CategoryDef>
   needsAction: CompiledNeedsAction
   sweep: { targetLabel: string; textHeuristic: string; after?: string | undefined }
@@ -83,6 +84,7 @@ export function compileConfig(config: ClassifierConfig): CompiledRules {
     automatedRe: new RegExp(d.automatedNamePattern, 'i'),
     brandRe: new RegExp(d.brandNamePattern, 'i'),
     personalProviderRe: new RegExp(d.personalProviderPattern, 'i'),
+    personalReplyExclusionRe: new RegExp(d.personalReplyExclusionPattern, 'i'),
     categories: new Map(config.categories.map((c) => [c.name, c])),
     needsAction: {
       label: config.needsAction.label,

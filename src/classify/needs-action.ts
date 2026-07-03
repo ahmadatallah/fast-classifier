@@ -9,8 +9,8 @@ export interface NeedsActionScore {
 
 /**
  * Keyword-weighted needs-action score over subject + snippet + sender name.
- * Phrases in compiled are pre-lowercased; trailing spaces are significant
- * ('sign ' avoids matching bare 'design').
+ * Phrases in compiled are pre-lowercased; trailing spaces in phrases are
+ * significant.
  */
 export function scoreNeedsAction(email: EmailMeta, compiled: CompiledRules): NeedsActionScore {
   const na = compiled.needsAction
@@ -36,11 +36,14 @@ export function scoreNeedsAction(email: EmailMeta, compiled: CompiledRules): Nee
   }
   if (email.isUnread) score += na.unreadBonus
 
-  // personal sender with a real name, unanswered -> likely needs a reply
+  // personal sender with a real name, unanswered -> likely needs a reply.
+  // Exclusion is the reference's bare-word regex (team|support|info…), NOT
+  // the @-anchored automated pattern — they treat e.g. 'x.support@gmail.com'
+  // differently.
   const person =
     compiled.personalProviderRe.test(email.from.email) &&
     /\s/.test(email.from.name.trim()) &&
-    !compiled.automatedRe.test(email.from.email)
+    !compiled.personalReplyExclusionRe.test(email.from.email)
   if (person && email.isAnswered !== true) {
     score += na.personalNeedsReplyBonus
     signals.push('personal')

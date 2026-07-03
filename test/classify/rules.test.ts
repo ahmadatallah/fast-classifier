@@ -19,7 +19,7 @@ const compiled = compileConfig(
       { kind: 'name', pattern: 'bolt|uber', category: 'Travel' },
       { kind: 'name', pattern: 'github', category: 'Dev', onlyForDomains: ['google.com'] },
     ],
-    detection: { personalDomains: ['atallahsan.cc'] },
+    detection: { personalDomains: ['my-own-domain.example'] },
   }),
 )
 
@@ -105,10 +105,10 @@ describe('classify precedence', () => {
   })
 
   test('personal-domain matches the FULL domain part, not the root', () => {
-    const match = classify({ name: 'Me', email: 'me@atallahsan.cc' }, compiled)
+    const match = classify({ name: 'Me', email: 'me@my-own-domain.example' }, compiled)
     expect(match?.category).toBe('Personal')
     expect(match?.rule).toBe('personal-domain')
-    expect(classify({ name: 'Me', email: 'me@sub.atallahsan.cc' }, compiled)).toBe(null)
+    expect(classify({ name: 'Me', email: 'me@sub.my-own-domain.example' }, compiled)).toBe(null)
   })
 
   test('unmatched sender returns null', () => {
@@ -139,5 +139,26 @@ describe('classify tier ordering on the same address', () => {
   test('sender beats domain beats name', () => {
     expect(classify({ name: 'Bolt', email: 'x@gmail.com' }, layered)?.rule).toBe('sender')
     expect(classify({ name: 'Bolt', email: 'y@gmail.com' }, layered)?.rule).toBe('domain')
+  })
+})
+
+describe('name rules on non-relay domains (review finding)', () => {
+  const c = compileConfig(
+    classifierConfigSchema.parse({
+      categories: [{ name: 'Jobs', label: 'Jobs' }],
+      rules: [
+        { kind: 'name', pattern: 'recruiting', category: 'Jobs', onlyForDomains: ['linkedin.com'] },
+      ],
+    }),
+  )
+
+  test('explicit onlyForDomains fires on a NON-relay domain', () => {
+    const match = classify({ name: 'Acme Recruiting', email: 'jobs@mail.linkedin.com' }, c)
+    expect(match?.category).toBe('Jobs')
+    expect(match?.rule).toBe('name')
+  })
+
+  test('and stays silent on unrelated domains', () => {
+    expect(classify({ name: 'Acme Recruiting', email: 'jobs@other.example' }, c)).toBe(null)
   })
 })

@@ -68,10 +68,12 @@ describe('scoreNeedsAction', () => {
     expect(viaName.signals).toEqual(['docusign'])
   })
 
-  test("the 'sign ' phrase keeps its trailing space", () => {
-    const signing = scoreNeedsAction(email({ subject: 'Please sign the form' }), compiled)
-    expect(signing.signals).toContain('sign')
-    expect(signing.score).toBe(3)
+  test("the bare 'sign ' phrase was dropped: 'design' never false-flags, 'to sign' still scores", () => {
+    // review finding: reference's 'sign ' substring-matched 'design update'
+    const design = scoreNeedsAction(email({ subject: 'New design update for you' }), compiled)
+    expect(design.score).toBe(0)
+    const toSign = scoreNeedsAction(email({ subject: 'Contract to sign today' }), compiled)
+    expect(toSign.signals).toContain('to sign')
     const designs = scoreNeedsAction(email({ subject: 'Check out my designs' }), compiled)
     expect(designs.score).toBe(0)
   })

@@ -38,6 +38,13 @@ const realSleep = (ms: number): Promise<void> => new Promise((resolve) => setTim
  *
  * 'scan' mode is for read-only recon over a static result: position advances
  * by items.length per page.
+ *
+ * MODE CONTRACT (review finding, load-bearing): 'drain' ASSUMES every yielded
+ * item is either removed from the query result by the consumer's mutation or
+ * marked skip(). A consumer that does neither — e.g. a DRY-RUN planning pass —
+ * re-reads page 1 until stall-out and silently misses every later page. Any
+ * non-mutating pass MUST use mode: 'scan' (pipelines derive this from their
+ * dryRun flag centrally, not per call site).
  */
 export class Pager implements AsyncIterable<EmailMeta> {
   readonly stats: PagerStats = { yielded: 0, skipped: 0, pages: 0, stalledOut: false }

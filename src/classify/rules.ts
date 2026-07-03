@@ -40,18 +40,24 @@ export function classify(sender: SenderInfo, compiled: CompiledRules): RuleMatch
       }
     }
 
-    // relay/aggregator roots carry no domain signal: consult name rules, then fallbacks
-    if (compiled.relayDomains.has(root)) {
-      for (const nameRule of compiled.nameRules) {
-        if (nameRule.onlyForDomains !== null && !nameRule.onlyForDomains.has(root)) continue
-        if (nameRule.pattern.test(name)) {
-          return {
-            category: nameRule.category,
-            rule: 'name',
-            reason: `name '${name}' matched /${nameRule.pattern.source}/ -> ${nameRule.category}`,
-          }
+    // Name rules: a rule applies when the sender's root is in its
+    // onlyForDomains, or — when unset — in the relay/aggregator set (roots
+    // that carry no domain signal). An explicit onlyForDomains therefore
+    // works for ANY domain, not just relays.
+    for (const nameRule of compiled.nameRules) {
+      const applicable = nameRule.onlyForDomains ?? compiled.relayDomains
+      if (!applicable.has(root)) continue
+      if (nameRule.pattern.test(name)) {
+        return {
+          category: nameRule.category,
+          rule: 'name',
+          reason: `name '${name}' matched /${nameRule.pattern.source}/ -> ${nameRule.category}`,
         }
       }
+    }
+
+    // relay/aggregator fallbacks
+    if (compiled.relayDomains.has(root)) {
       if (compiled.accountDomains.has(root)) {
         return {
           category: compiled.accountCategory,

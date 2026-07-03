@@ -247,3 +247,69 @@ describe('McpHttpClient.callTool', () => {
     expect(err).toBeInstanceOf(RateLimitError)
   })
 })
+
+describe('redaction on non-HTTP error paths (review finding)', () => {
+  test('JSON-RPC error envelope echoing the token throws redacted, including detail', async () => {
+    const { client } = makeClient(() => ({
+      body: sse(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: 7,
+          error: { code: -32000, message: `bad auth header Bearer ${TOKEN}` },
+        }),
+      ),
+    }))
+    try {
+      await client.rpc('tools/list', {})
+      expect.unreachable()
+    } catch (err) {
+      expect(err).toBeInstanceOf(TransportError)
+      expect((err as Error).message).not.toContain(TOKEN)
+      expect(JSON.stringify((err as TransportError).detail)).not.toContain(TOKEN)
+    }
+  })
+
+  test('tool isError text echoing the token throws redacted', async () => {
+    const { client } = makeClient(() => ({
+      body: sse(
+        envelope({ isError: true, content: [{ type: 'text', text: `boom ${TOKEN} boom` }] }),
+      ),
+    }))
+    try {
+      await client.callTool('search_email', {})
+      expect.unreachable()
+    } catch (err) {
+      expect((err as Error).message).toContain('TOOL_ERROR')
+      expect((err as Error).message).not.toContain(TOKEN)
+    }
+  })
+})
+
+describe('protocol version header + structuredContent fallthrough (review findings)', () => {
+  test('MCP-Protocol-Version header appears on every post-initialize request', async () => {
+    const { client, requests } = makeClient((req) =>
+      (req.body['method'] as string) === 'initialize'
+        ? { body: sse(envelope({ capabilities: {} })), headers: { 'mcp-session-id': 's1' } }
+        : { body: sse(envelope({ ok: true })) },
+    )
+    await client.init()
+    await client.rpc('tools/list', {})
+    expect(requests[0]?.headers['mcp-protocol-version']).toBeUndefined()
+    // notifications/initialized and later calls carry it
+    expect(requests[1]?.headers['mcp-protocol-version']).toBe('2025-06-18')
+    expect(requests[2]?.headers['mcp-protocol-version']).toBe('2025-06-18')
+  })
+
+  test('present-but-null structuredContent falls through to the text body', async () => {
+    const { client } = makeClient(() => ({
+      body: sse(
+        envelope({
+          structuredContent: null,
+          content: [{ type: 'text', text: JSON.stringify({ items: [1, 2] }) }],
+        }),
+      ),
+    }))
+    const result = await client.callTool<{ items: number[] }>('search_email', {})
+    expect(result).toEqual({ items: [1, 2] })
+  })
+})

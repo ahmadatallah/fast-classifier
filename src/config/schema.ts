@@ -8,6 +8,7 @@ import {
   DEFAULT_OPS,
   DEFAULT_PERSONAL_PROVIDER_DOMAINS,
   DEFAULT_PERSONAL_PROVIDER_PATTERN,
+  DEFAULT_PERSONAL_REPLY_EXCLUSION_PATTERN,
   DEFAULT_RELAY_DOMAINS,
 } from './defaults.js'
 
@@ -58,6 +59,8 @@ export const detectionSchema = z
     brandNamePattern: z.string().default(DEFAULT_BRAND_PATTERN),
     /** regex source, case-insensitive: freemail providers (needs-action heuristic) */
     personalProviderPattern: z.string().default(DEFAULT_PERSONAL_PROVIDER_PATTERN),
+    /** regex source, case-insensitive: senders excluded from the needs-reply bonus */
+    personalReplyExclusionPattern: z.string().default(DEFAULT_PERSONAL_REPLY_EXCLUSION_PATTERN),
   })
   .default({})
 
@@ -113,29 +116,60 @@ export const classifierConfigSchema = z
     ops: opsSchema,
   })
   .superRefine((config, ctx) => {
+    const issue = (path: (string | number)[], message: string) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path, message })
+
+    // rule -> category references
     const names = new Set(config.categories.map((c) => c.name))
     config.rules.forEach((rule, i) => {
       if (!names.has(rule.category)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['rules', i, 'category'],
-          message: `rule references unknown category '${rule.category}' — add it to categories[]`,
-        })
+        issue(
+          ['rules', i, 'category'],
+          `rule references unknown category '${rule.category}' — add it to categories[]`,
+        )
       }
     })
-    for (const [i, rule] of config.rules.entries()) {
-      if (rule.kind === 'name') {
-        try {
-          new RegExp(rule.pattern, 'i')
-        } catch (err) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['rules', i, 'pattern'],
-            message: `invalid regex: ${(err as Error).message}`,
-          })
-        }
+
+    // duplicates would otherwise resolve last-wins silently in compileConfig
+    const seenCategories = new Set<string>()
+    config.categories.forEach((c, i) => {
+      if (seenCategories.has(c.name))
+        issue(['categories', i, 'name'], `duplicate category '${c.name}'`)
+      seenCategories.add(c.name)
+    })
+    const seenDomains = new Set<string>()
+    const seenSenders = new Set<string>()
+    config.rules.forEach((rule, i) => {
+      if (rule.kind === 'domain') {
+        const d = rule.domain.toLowerCase()
+        if (seenDomains.has(d)) issue(['rules', i, 'domain'], `duplicate domain rule '${d}'`)
+        seenDomains.add(d)
+      } else if (rule.kind === 'sender') {
+        const a = rule.address.toLowerCase()
+        if (seenSenders.has(a)) issue(['rules', i, 'address'], `duplicate sender rule '${a}'`)
+        seenSenders.add(a)
+      }
+    })
+
+    // every regex source must compile — a bad pattern must fail here, not
+    // as a raw SyntaxError inside compileConfig
+    const checkRegex = (source: string, path: (string | number)[]) => {
+      try {
+        new RegExp(source, 'i')
+      } catch (err) {
+        issue(path, `invalid regex: ${(err as Error).message}`)
       }
     }
+    for (const [i, rule] of config.rules.entries()) {
+      if (rule.kind === 'name') checkRegex(rule.pattern, ['rules', i, 'pattern'])
+    }
+    checkRegex(config.detection.automatedNamePattern, ['detection', 'automatedNamePattern'])
+    checkRegex(config.detection.brandNamePattern, ['detection', 'brandNamePattern'])
+    checkRegex(config.detection.personalProviderPattern, ['detection', 'personalProviderPattern'])
+    checkRegex(config.detection.personalReplyExclusionPattern, [
+      'detection',
+      'personalReplyExclusionPattern',
+    ])
   })
 
 export type ClassifierConfig = z.output<typeof classifierConfigSchema>

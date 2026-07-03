@@ -1,3 +1,4 @@
+// hygiene-allow-token: this test plants FAKE fmu1- tokens to prove redaction works
 import { describe, test, expect } from 'bun:test'
 import { redact, redactError, redactDeep } from '../../src/safety/redact.js'
 

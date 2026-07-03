@@ -52,3 +52,23 @@ describe('buildSearchString', () => {
     )
   })
 })
+
+describe('quoting of spaced values (review finding)', () => {
+  test('spaced label is double-quoted so the server scopes correctly', () => {
+    expect(buildSearchString({ inMailbox: 'Needs action' })).toBe('in:"Needs action"')
+  })
+
+  test('single-word values stay unquoted', () => {
+    expect(buildSearchString({ inMailbox: 'Promotion' })).toBe('in:Promotion')
+  })
+
+  test('spaced from/notFrom values are quoted; text stays free-text', () => {
+    expect(buildSearchString({ from: 'a b@x.com' })).toBe('from:"a b@x.com"')
+    expect(buildSearchString({ notFrom: ['keep me@x.com'] })).toBe('-from:"keep me@x.com"')
+    expect(buildSearchString({ text: 'two words' })).toBe('two words')
+  })
+
+  test('embedded double quotes are stripped, not escaped into the DSL', () => {
+    expect(buildSearchString({ inMailbox: 'To "do" list' })).toBe('in:"To do list"')
+  })
+})

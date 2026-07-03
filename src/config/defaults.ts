@@ -44,7 +44,9 @@ export const DEFAULT_HIGH_KEYWORDS: readonly WeightedKeyword[] = [
   'zahlungserinnerung',
   'appointment',
   'termin',
-  'sign ',
+  // deviation from the reference: the bare phrase 'sign ' matched mid-word
+  // ('design update') — dropped; 'signature'/'to sign'/'docusign'/German
+  // forms below keep the coverage
   'signature',
   'unterschrift',
   'unterschreiben',
@@ -113,9 +115,18 @@ export const DEFAULT_EXCLUSION_KEYWORDS: readonly WeightedKeyword[] = [
 export const DEFAULT_AUTOMATED_PATTERN =
   'no.?reply|newsletter|notification|notifications|team@|support@|info@|hello@|service@|noreply|automated|updates?@|marketing|billing|invoice|receipt|do.?not.?reply|mailer|news@|@mail\\.|@email\\.|@e\\.|@em\\.|@updates?\\.|@notify'
 
-/** Big-brand detector (matched against address + display name). */
+/** Big-brand detector (matched against address + display name). Verbatim from reference/human.mjs. */
 export const DEFAULT_BRAND_PATTERN =
-  'uber|linkedin|amazon|paypal|apple|google|github|klarna|revolut|kraken|stripe|netflix|substack|meetup|crunchbase|ahrefs|xing|bolt|lieferando|wolt|trip|airbnb|booking|o2|ionos|fastmail|cloudflare|samsung|microsoft|audible|spotify|discord|steam|adobe|notion|slack|taxfix|schufa|n26|vivid|deutschebahn|flixbus|dhl|hermes|ups|zalando|mediamarkt'
+  'uber|linkedin|amazon|paypal|apple|google|github|klarna|revolut|kraken|stripe|netflix|substack|meetup|crunchbase|ahrefs|xing|bolt|lieferando|wolt|trip|airbnb|booking|o2|ionos|fastmail|cloudflare|instantdb|hashcards|val\\.town|executeprogram|samsung|microsoft|audible|spotify|discord|steam|adobe|notion|slack|gorillas|holafly|mubi|taxfix|schufa|haspa|n26|vivid|deutschebahn|flixbus|dhl|hermes|ups|zalando|mediamarkt'
+
+/**
+ * Exclusion for the needs-action "personal sender awaiting reply" bonus,
+ * verbatim from reference/na-score.mjs (bare words on purpose — broader than
+ * the @-anchored automated pattern, e.g. it excludes 'support' anywhere in
+ * the address).
+ */
+export const DEFAULT_PERSONAL_REPLY_EXCLUSION_PATTERN =
+  'no.?reply|newsletter|team|support|info|notification'
 
 /** Freemail/consumer providers whose senders are likely people, not services. */
 export const DEFAULT_PERSONAL_PROVIDER_PATTERN =
