@@ -19,6 +19,9 @@ Accepted before or after the subcommand — both `fast-classifier --execute swee
 | `--max <n>`             | cap on emails scanned per run (a positive integer)                  |
 | `--yes`                 | skip confirmation prompts for large mutation batches                |
 | `--json`                | print the full report JSON to stdout instead of a summary           |
+| `--csv`                 | print the report as CSV instead of a summary (array field auto-picked) |
+| `--csv-field <path>`    | dot-path to the array field to flatten, e.g. `domains`              |
+| `--view`                | render the report as a table via [tennis](https://github.com/gurgeous/tennis) instead of printing |
 | `--report-dir <dir>`    | directory for reports and audit logs (default `./.fast-classifier`) |
 
 ## Commands

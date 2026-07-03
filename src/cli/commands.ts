@@ -18,6 +18,7 @@ import {
 import { allowAll, denyAll, interactiveConfirm } from '../safety/index.js'
 import { suggestRules } from '../suggest/index.js'
 import type { SuggestionResult } from '../suggest/index.js'
+import { reportToCsv } from './csv.js'
 import {
   formatAnalyze,
   formatEnsured,
@@ -40,6 +41,8 @@ import {
   writeSuggestedConfig,
 } from './suggest-flow.js'
 import type { AcceptedRule, PromptFn, SuggestIo } from './suggest-flow.js'
+import { installTennis, TENNIS_VERSION } from './tennis-install.js'
+import { runTennis } from './viewer.js'
 
 export interface CliDeps {
   providerFactory: ProviderFactory
@@ -52,6 +55,8 @@ export interface CliDeps {
   setExitCode?: (code: number) => void
   /** injectable question gate for the suggest flow; tests script the answers */
   prompt?: PromptFn
+  /** renders `--view` output; defaults to spawning `tennis -` on PATH */
+  runCsvViewer?: (csv: string) => Promise<void>
 }
 
 interface GlobalOpts {
@@ -61,6 +66,9 @@ interface GlobalOpts {
   max?: number
   yes?: boolean
   json?: boolean
+  csv?: boolean
+  csvField?: string
+  view?: boolean
   reportDir: string
 }
 
@@ -86,6 +94,12 @@ export const addGlobalOptions = (cmd: Command, withDefaults: boolean): Command =
     .option('--max <n>', 'cap on emails scanned per run', parsePositiveInt)
     .option('--yes', 'skip confirmation prompts for large mutation batches')
     .option('--json', 'print the full report JSON to stdout instead of a summary')
+    .option('--csv', 'print the report as CSV instead of a summary (array field auto-picked)')
+    .option('--csv-field <path>', 'dot-path to the array field to flatten, e.g. "domains"')
+    .option(
+      '--view',
+      'render the report as a table via tennis (github.com/gurgeous/tennis) instead of printing',
+    )
   if (withDefaults) {
     cmd.option('--report-dir <dir>', 'directory for reports and audit logs', './.fast-classifier')
   } else {
@@ -150,10 +164,31 @@ const emit = async (
   report: unknown,
   human: string,
 ): Promise<void> => {
+  // Validate mutually exclusive output flags
+  const outputFlags = [opts.view, opts.csv, opts.json].filter((f) => f === true).length
+  if (outputFlags > 1) {
+    throw new Error('--view, --csv, and --json are mutually exclusive; use only one')
+  }
   const path = await writeReport(opts.reportDir, name, report)
-  if (opts.json === true) deps.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
-  else deps.stdout.write(human)
-  deps.stderr.write(`report: ${path}\n`)
+  if (opts.view === true) {
+    try {
+      const runViewer = deps.runCsvViewer ?? runTennis
+      await runViewer(reportToCsv(report, opts.csvField))
+    } finally {
+      // Report file path is always printed, even if viewer fails
+      deps.stderr.write(`report: ${path}\n`)
+    }
+  } else {
+    if (opts.csv === true || opts.csvField !== undefined) {
+      // a bare --csv-field implies --csv
+      deps.stdout.write(reportToCsv(report, opts.csvField))
+    } else if (opts.json === true) {
+      deps.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    } else {
+      deps.stdout.write(human)
+    }
+    deps.stderr.write(`report: ${path}\n`)
+  }
 }
 
 const abortedByConfirm = (deps: CliDeps, command: string): void => {
@@ -357,8 +392,15 @@ export const registerCommands = (program: Command, deps: CliDeps): void => {
           const result = suggestRules(report.domains, ctx.compiled)
           await emit(deps, opts, 'suggest', result, formatSuggest(result))
 
+          // machine-readable output only changes the DEFAULT — an explicit
+          // --interactive (or --no-interactive) always wins
+          const machineReadable =
+            opts.json === true ||
+            opts.csv === true ||
+            opts.csvField !== undefined ||
+            opts.view === true
           const interactive =
-            opts.json !== true && (cmdOpts.interactive ?? process.stdin.isTTY === true)
+            cmdOpts.interactive ?? (!machineReadable && process.stdin.isTTY === true)
           const accepted = await selectRules(result, ctx.config, interactive, suggestIo(deps))
 
           if (cmdOpts.write === true) {
@@ -378,7 +420,9 @@ export const registerCommands = (program: Command, deps: CliDeps): void => {
             deps.stdout.write(`wrote ${target}\n`)
             return
           }
-          if (opts.json !== true) printFragment(deps, result, accepted, ctx.config)
+          // an interactive walk earns its fragment even in --view/--csv mode;
+          // only silent machine-readable runs suppress it (keeps pipes clean)
+          if (interactive || !machineReadable) printFragment(deps, result, accepted, ctx.config)
         },
       ),
     )
@@ -410,6 +454,18 @@ export const registerCommands = (program: Command, deps: CliDeps): void => {
         // 'wx' re-checks atomically in case the file appeared since existsSync
         await writeFile(target, STARTER_CONFIG, { flag: 'wx' })
         deps.stdout.write(`wrote ${target}\n${INIT_GUIDANCE}`)
+      }),
+    )
+
+  program
+    .command('install-viewer')
+    .description(
+      `download tennis v${TENNIS_VERSION} (CSV table viewer for --view) into ~/.fast-classifier/bin — checksum-verified`,
+    )
+    .action(
+      wrap(deps, async () => {
+        const path = await installTennis({ log: (message) => deps.stderr.write(`${message}\n`) })
+        deps.stdout.write(`${path}\n`)
       }),
     )
 

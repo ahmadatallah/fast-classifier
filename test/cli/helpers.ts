@@ -22,6 +22,7 @@ export interface HarnessOptions {
   factory?: ProviderFactory
   env?: Record<string, string | undefined>
   config?: unknown
+  runCsvViewer?: CliDeps['runCsvViewer']
 }
 
 export const TEST_ENV = {
@@ -49,6 +50,7 @@ export const makeHarness = async (
     stderr: { write: (chunk: string) => stderr.push(chunk) },
     exitOverride: true,
     setExitCode: (code) => exitCodes.push(code),
+    ...(options.runCsvViewer ? { runCsvViewer: options.runCsvViewer } : {}),
   }
 
   return {
