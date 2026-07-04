@@ -18,8 +18,12 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
   {/* `_top` is Starlight's PAGE_TITLE_ID — skip links target it */}
   <h1 id="_top" data-page-title>
     <span class="mark"><Mark size={52} /></span>
-    <span class="wordmark" set:html={title} /><span class="cursor" aria-hidden="true">▍</span>
+    <span class="wordmark" set:html={title} />
   </h1>
+  <p class="typeline" aria-hidden="true">
+    <span class="type-prefix">›</span>
+    <span id="hero-type"></span><span class="cursor">▍</span>
+  </p>
   {tagline && <p class="tagline" set:html={tagline} />}
   {
     actions.length > 0 && (
@@ -69,6 +73,23 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
   .mark {
     display: inline-flex;
     color: var(--sl-color-white);
+  }
+
+  .typeline {
+    margin-top: 0.9rem;
+    font-family: var(--sl-font-mono), var(--sl-font-system-mono);
+    font-size: clamp(1.2rem, 0.6rem + 2vw, 1.7rem);
+    font-weight: 600;
+    min-height: 1.5em;
+  }
+
+  .type-prefix {
+    color: var(--sl-color-gray-3);
+    margin-inline-end: 0.35em;
+  }
+
+  #hero-type {
+    color: var(--sl-color-text-accent);
   }
 
   .cursor {
@@ -166,3 +187,44 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
     color: var(--sl-color-gray-3);
   }
 </style>
+
+<script>
+  // Typewriter under the wordmark: cycles the real session categories the
+  // classifier files mail into. Static under prefers-reduced-motion.
+  const el = document.getElementById('hero-type')
+  if (el) {
+    const words = [
+      'needs action',
+      'promotion',
+      'travel',
+      'finance',
+      'health',
+      'dev',
+      'stores',
+      'jobs',
+    ]
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.textContent = words[0] ?? ''
+    } else {
+      let word = 0
+      let len = 0
+      let deleting = false
+      const tick = () => {
+        const current = words[word] ?? ''
+        len += deleting ? -1 : 1
+        el.textContent = current.slice(0, len)
+        let delay = deleting ? 45 : 85
+        if (!deleting && len === current.length) {
+          delay = 1600 // hold the completed word
+          deleting = true
+        } else if (deleting && len === 0) {
+          deleting = false
+          word = (word + 1) % words.length
+          delay = 350
+        }
+        window.setTimeout(tick, delay)
+      }
+      window.setTimeout(tick, 600)
+    }
+  }
+</script>

@@ -249,9 +249,11 @@ h1#_top {
   color: var(--sl-color-white);
 }
 
-/* Square, bordered search trigger with mono placeholder */
+/* Search trigger: the one deliberate round exception to the square system —
+   a bordered grey circle (pill when the label is visible on wide screens) */
 button[data-open-modal] {
-  border: 1px solid var(--sl-color-hairline);
+  border: 1px solid var(--sl-color-hairline) !important;
+  border-radius: 999px !important;
   background-color: var(--sl-color-gray-6);
   color: var(--sl-color-gray-3);
   font-family: var(--sl-font-mono), var(--sl-font-system-mono);
