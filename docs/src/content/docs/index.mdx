@@ -21,6 +21,18 @@ import TerminalSession from '../../components/TerminalSession.astro'
 
 <TerminalSession />
 
+## The 20-second demo
+
+<video
+  controls
+  muted
+  playsinline
+  preload="metadata"
+  src={import.meta.env.BASE_URL + 'demo.mp4'}
+  style="width: 100%; border: 1px solid var(--sl-color-hairline); display: block;"
+  aria-label="fast-classifier demo: the canonical loop sweeping 3,849 newsletters with zero deletions"
+/>
+
 ## Born from a real inbox
 
 fast-classifier was born from a live session that organized a real 6,551-email inbox: **3,849 newsletters swept in one run**, **5,573 emails filed into 14 labels**, and **87% rule coverage** reached by iterating recon reports instead of training anything. The one-off scripts from that session are preserved read-only in [`reference/`](https://github.com/ahmadatallah/fast-classifier/tree/main/reference); this project is those scripts hardened into a typed, tested library with a CLI and an MCP server. Every [core concept](concepts/01-mcp-handshake/) shipped from that session.

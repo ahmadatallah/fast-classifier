@@ -13,3 +13,4 @@ reference/
 docs/dist/
 docs/.astro/
 docs/src/content/docs/api/
+brag-output*/

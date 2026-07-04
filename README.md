@@ -7,6 +7,8 @@ Deterministic, rule-first email classifier for Fastmail: sweep newsletters, file
 
 fast-classifier was born from a live session that organized a real 6,551-email inbox: 3,849 newsletters swept in one run, 5,573 emails filed into 14 labels, and 87% rule coverage reached by iterating recon reports instead of training anything. The one-off scripts from that session are preserved read-only in [`reference/`](reference/); this repo is those scripts hardened into a typed, tested library with a CLI and an MCP server. Every core concept below shipped from that session.
 
+**[▶ Watch the 20-second demo](https://ahmadatallah.github.io/fast-classifier/demo.mp4)** — the whole pitch in one terminal session (also attached to the [v0.1.0 release](https://github.com/ahmadatallah/fast-classifier/releases/tag/v0.1.0)).
+
 ## Safety model
 
 Read this before installing — it is the point of the project.

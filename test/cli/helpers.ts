@@ -23,6 +23,7 @@ export interface HarnessOptions {
   env?: Record<string, string | undefined>
   config?: unknown
   runCsvViewer?: CliDeps['runCsvViewer']
+  prompt?: CliDeps['prompt']
 }
 
 export const TEST_ENV = {
