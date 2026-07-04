@@ -1,6 +1,17 @@
 <svg width="36" height="32" viewBox="0 0 36 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .row { fill: #0f766e; animation: cycle 8s linear infinite; }
+    @keyframes cycle {
+      0%, 20% { fill: #0f766e; }
+      25%, 45% { fill: #0067b9; }
+      50%, 70% { fill: #69b3e7; }
+      75%, 95% { fill: #ffc107; }
+      100% { fill: #0f766e; }
+    }
+    @media (prefers-reduced-motion: reduce) { .row { animation: none; } }
+  </style>
   <path d="M29 11.5 V3 H3 V29 H29 V20.5" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="square"/>
   <line x1="8" y1="9.5" x2="23" y2="9.5" stroke="#1c1b1a" stroke-width="2.6"/>
-  <rect x="8" y="14" width="27" height="4" fill="#0f766e"/>
+  <rect class="row" x="8" y="14" width="27" height="4"/>
   <line x1="8" y1="22.5" x2="23" y2="22.5" stroke="#1c1b1a" stroke-width="2.6"/>
 </svg>
