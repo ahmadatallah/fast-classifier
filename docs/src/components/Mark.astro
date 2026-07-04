@@ -37,39 +37,4 @@ const { size = 40 } = Astro.props
   <line x1="8" y1="22.5" x2="23" y2="22.5" stroke="currentColor" stroke-width="2.6"></line>
 </svg>
 
-<style>
-  /* The filed row cycles through the Fastmail brand palette (blue, light
-     blue, amber) and back to the ledger teal — a slow status-LED beat, not a
-     strobe. Static teal under reduced motion. */
-  .fc-row {
-    animation: fc-row-cycle 8s linear infinite;
-  }
-
-  @keyframes fc-row-cycle {
-    0%,
-    20% {
-      fill: var(--fc-logo-accent, #0f766e);
-    }
-    25%,
-    45% {
-      fill: #0067b9;
-    }
-    50%,
-    70% {
-      fill: #69b3e7;
-    }
-    75%,
-    95% {
-      fill: #ffc107;
-    }
-    100% {
-      fill: var(--fc-logo-accent, #0f766e);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .fc-row {
-      animation: none;
-    }
-  }
-</style>
+{/* The hero mark stays static — only the header logo cycles the palette. */}
