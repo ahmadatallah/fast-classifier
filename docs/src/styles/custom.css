@@ -260,6 +260,20 @@ button[data-open-modal] {
   font-size: var(--sl-text-xs);
 }
 
+/* Icon-only state (below Starlight's md breakpoint): a true circle needs a
+   square box — the bare icon button otherwise computes ~27x40 and renders
+   as a lozenge */
+@media (max-width: 50rem) {
+  button[data-open-modal] {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 button[data-open-modal]:hover {
   border-color: var(--sl-color-gray-4);
   color: var(--sl-color-text);
