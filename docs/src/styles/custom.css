@@ -400,6 +400,38 @@ footer.sl-flex .meta :is(a, p) {
   --fc-logo-accent: #0f766e;
 }
 
+/* Hero typewriter: per-word colors follow the logo's palette cycle
+   (teal -> Fastmail blue -> light blue -> amber), lightness-corrected per
+   theme so the words stay readable as text. Global on purpose — the classes
+   are toggled by JS and the theme selectors must reach :root. */
+#hero-typewrap {
+  color: var(--sl-color-text-accent);
+}
+
+#hero-typewrap.w1 {
+  color: #4f9ee0;
+}
+
+#hero-typewrap.w2 {
+  color: #69b3e7;
+}
+
+#hero-typewrap.w3 {
+  color: #ffc107;
+}
+
+:root[data-theme='light'] #hero-typewrap.w1 {
+  color: #0067b9;
+}
+
+:root[data-theme='light'] #hero-typewrap.w2 {
+  color: #2a7fbf;
+}
+
+:root[data-theme='light'] #hero-typewrap.w3 {
+  color: #b45309;
+}
+
 /* ---------------------------------------------------------------- */
 /* 11. Motion                                                        */
 /* ---------------------------------------------------------------- */

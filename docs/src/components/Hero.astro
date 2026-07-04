@@ -22,7 +22,7 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
   </h1>
   <p class="typeline" aria-hidden="true">
     <span class="type-prefix">›</span>
-    <span id="hero-type"></span><span class="cursor">▍</span>
+    <span id="hero-typewrap" class="w0"><span id="hero-type"></span><span class="cursor">▍</span></span>
   </p>
   {tagline && <p class="tagline" set:html={tagline} />}
   {
@@ -76,24 +76,26 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
   }
 
   .typeline {
-    margin-top: 0.9rem;
+    margin-top: 0.6rem;
     font-family: var(--sl-font-mono), var(--sl-font-system-mono);
-    font-size: clamp(1.2rem, 0.6rem + 2vw, 1.7rem);
+    /* same scale as the wordmark — the cursor lives at hero size, as before */
+    font-size: clamp(2.25rem, 1rem + 5vw, 3.75rem);
     font-weight: 600;
-    min-height: 1.5em;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    min-height: 1.2em;
   }
 
   .type-prefix {
     color: var(--sl-color-gray-3);
-    margin-inline-end: 0.35em;
+    margin-inline-end: 0.3em;
   }
 
-  #hero-type {
-    color: var(--sl-color-text-accent);
-  }
+  /* Per-word palette colors live in custom.css (global) — theme-dependent
+     selectors and JS-toggled classes don't survive Astro's style scoping. */
 
   .cursor {
-    color: var(--sl-color-text-accent);
+    color: currentColor;
     margin-inline-start: 0.08em;
     animation: ledger-blink 1.1s step-end infinite;
   }
@@ -190,9 +192,11 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
 
 <script>
   // Typewriter under the wordmark: cycles the real session categories the
-  // classifier files mail into. Static under prefers-reduced-motion.
+  // classifier files mail into, each word tinted by the same palette cycle
+  // as the logo's filed row. Static under prefers-reduced-motion.
   const el = document.getElementById('hero-type')
-  if (el) {
+  const wrap = document.getElementById('hero-typewrap')
+  if (el && wrap) {
     const words = [
       'needs action',
       'promotion',
@@ -220,6 +224,10 @@ const { title = data.title, tagline, actions = [] } = data.hero || {};
         } else if (deleting && len === 0) {
           deleting = false
           word = (word + 1) % words.length
+          // classList (not className) — a full overwrite would strip Astro's
+          // scoping class and detach every scoped style
+          wrap.classList.remove('w0', 'w1', 'w2', 'w3')
+          wrap.classList.add('w' + (word % 4))
           delay = 350
         }
         window.setTimeout(tick, delay)
