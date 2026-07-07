@@ -4,6 +4,8 @@ coverage/
 .env
 .env.*
 !.env.example
+# personal rule set at the repo root (examples/ ships the anonymized twin)
+/fast-classifier.config.*
 .fast-classifier/
 *-report.json
 *.log
