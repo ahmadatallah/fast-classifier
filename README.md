@@ -154,13 +154,22 @@ See [`examples/`](examples/) for a full real-world config — the German-power-u
 
 ## MCP server mode
 
-`fast-classifier-mcp` runs an MCP server on stdio: it loads the config from the working directory, connects the configured provider, and reads the matching token from the environment. Register it with an MCP client, e.g.:
+`fast-classifier-mcp` runs an MCP server on stdio: it loads the config from the working directory it is launched in, connects the configured provider, and reads the matching token from the environment. Register it with an MCP client, e.g.:
 
 ```sh
+# token stays in .env — never in the client's config file. The absolute
+# --env-file path keeps the token loading whatever cwd the client launches with.
 claude mcp add fast-classifier \
-  --env FASTMAIL_API_TOKEN=your-jmap-token \
-  -- fast-classifier-mcp
+  -- bun --env-file /abs/path/to/fast-classifier/.env \
+     /abs/path/to/fast-classifier/dist/mcp-server/main.js
 ```
+
+Append `--allow-execute` to the command when the agent should be able to write — every tool still dry-runs per call unless it passes `dryRun: false` (see below). If `fast-classifier-mcp` is on your PATH (`bun link`) and the token is exported in the client's environment, `claude mcp add fast-classifier -- fast-classifier-mcp` works too.
+
+Two startup facts worth knowing:
+
+- **The server fails fast** when the token is missing or the config is invalid — MCP clients surface that as a bare "Failed to connect". Run `bun dist/mcp-server/main.js </dev/null` to see the actual error.
+- **The config comes from the launch cwd.** `claude mcp add` (local scope) launches from the project root, so a `fast-classifier.config.ts` there is picked up; other clients may launch elsewhere — check their cwd if the server reports the default empty config.
 
 Tools (11): `classify_sender`, `analyze_inbox`, `plan_classification`, `suggest_rules`, `sweep_newsletters`, `file_inbox`, `score_needs_action`, `list_labels`, `ensure_labels`, `verify_run`, `get_effective_config`.
 
